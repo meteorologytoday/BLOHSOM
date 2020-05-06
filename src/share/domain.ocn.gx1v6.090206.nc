@@ -1,1 +1,0 @@
-/seley/tienyiah/CESM_domains/domain.ocn.gx1v6.090206.nc
