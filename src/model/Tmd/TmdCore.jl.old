@@ -1,0 +1,262 @@
+mutable struct Cols
+    z_bnd_av      :: Array{SubArray}
+    T             :: Array{SubArray}
+    S             :: Array{SubArray}
+    b             :: Array{SubArray}
+    b_mixed       :: Array{SubArray}
+    B             :: Array{SubArray}
+    Δz_T          :: Array{SubArray}
+    rad_decay_coe :: Array{SubArray}
+    rad_absorp_coe:: Array{SubArray}
+    X             :: Array
+    function Cols()
+        return new()
+    end
+end
+
+
+
+mutable struct TmdCore    # Adam Bashford
+
+    cols           :: Cols
+
+    Δz_T           :: AbstractArray{Float64, 3}   
+    Δz_W           :: AbstractArray{Float64, 3}   
+
+    rad_decay_coe  :: AbstractArray{Float64, 3}
+    rad_absorp_coe :: AbstractArray{Float64, 3}
+
+    ASUM           :: Any#AdvectionSpeedUpMatrix
+
+    wksp           :: Workspace
+
+    XFLUX_top    :: AbstractArray{Float64, 3}
+    XFLUX_bot    :: AbstractArray{Float64, 3}
+    XFLUX_CONV   :: AbstractArray{Float64, 4}
+    XFLUX_CONV_h :: AbstractArray{Float64, 4}
+    XFLUX_DEN_x  :: AbstractArray{Float64, 4}
+    XFLUX_DEN_y  :: AbstractArray{Float64, 4}
+    XFLUX_DEN_z  :: AbstractArray{Float64, 4}
+
+    acc_vars     :: AccumulativeVariables
+    
+    valid_idx    :: AbstractArray{Int64, 2}
+
+    current_substep :: Int64
+
+    function TmdCore(env, state, diag, forcing)
+        
+        Nx = env.Nx
+        Ny = env.Ny
+        Nz = env.Nz
+        NX = env.NX
+
+        mask2 = env.mask2
+
+        Δz_T     = zeros(Float64, Nz    , Nx, Ny)
+        Δz_W     = zeros(Float64, Nz + 1, Nx, Ny)
+
+        Δz_T      .= NaN
+        Δz_W      .= NaN
+        
+        for i=1:Nx, j=1:Ny
+            if mask2[i, j] == 0
+                continue
+            end
+            _Nz_av = env.Nz_av[i, j]
+            Δz_T[ 1:_Nz_av,   i, j] = env.z_bnd_av[1:_Nz_av, i, j] - env.z_bnd_av[2:_Nz_av+1, i, j]
+
+            if _Nz_av > 1
+                Δz_W[2:_Nz_av, i, j] = (Δz_T[1:_Nz_av-1, i, j] + Δz_T[2:_Nz_av, i, j]) / 2.0
+            end
+
+            Δz_W[       1, i, j] = Δz_T[     1, i, j]
+            Δz_W[_Nz_av+1, i, j] = Δz_T[_Nz_av, i, j]
+
+            if (isnan.(Δz_T) |> any) #|| (Δz_T.==0) |> any
+            #    throw(ErrorException("weird"))
+            end
+        end
+        
+        rad_decay_coe, rad_absorp_coe = genRadCoe(
+            Nx       = Nx,
+            Ny       = Ny,
+            Nz       = Nz,
+            Nz_av    = env.Nz_av,
+            mask2    = mask2,
+            ζ        = env.ζ,
+            Δz_T     = Δz_T,
+            z_bnd_av = env.z_bnd_av,
+        )
+
+        # making columnwise views
+        cols = Cols()
+        for (var, ref) in Dict(
+            :z_bnd_av        => env.z_bnd_av,
+            :X               => state.X,
+            :T               => state.T,
+            :S               => state.S,
+            :b               => state.b,
+            :b_mixed         => state.b_mixed,
+            :B               => state.B,
+            :Δz_T            => Δz_T,
+            :rad_decay_coe   => rad_decay_coe,
+            :rad_absorp_coe  => rad_absorp_coe,
+        )
+            setfield!(cols, var, genColView(ref))
+        end
+
+        println("Making ASUM")
+#=        @time ASUM = AdvectionSpeedUpMatrix(;
+                gi = env.gi,
+                Nz = Nz,
+                Nz_av = env.Nz_av,
+                mask3 = env.mask3,
+                noflux_x_mask3 = env.noflux_x_mask3,
+                noflux_y_mask3 = env.noflux_y_mask3,
+                Δz_W = Δz_W,
+                Δz_T = Δz_T,
+        )
+=#
+        @time ASUM = AdvectionSpeedUpMatrix(;
+                gi = env.gi,
+                Nz_bone = Nz,
+                Nz = env.Nz_av,
+                mask3 = env.mask3,
+                noflux_x_mask3 = env.noflux_x_mask3,
+                noflux_y_mask3 = env.noflux_y_mask3,
+                Δzs = Δz_W[2:end-1, :, :],
+                hs = Δz_T,
+        )
+
+
+        wksp = Workspace(;
+            Nx = Nx,
+            Ny = Ny,
+            Nz = Nz,
+            T = 10,
+            U = 1,
+            V = 1,
+            W = 1,
+            sT = 0,
+            sU = 0,
+            sV = 0,
+        ) 
+
+
+        XFLUX_top    = zeros(Float64, Nx, Ny, NX)
+        XFLUX_bot    = zeros(Float64, Nx, Ny, NX)
+        XFLUX_CONV   = zeros(Float64, Nz, Nx, Ny, NX)
+        XFLUX_CONV_h = zeros(Float64, Nz, Nx, Ny, NX)
+        XFLUX_DEN_x  = zeros(Float64, Nz, Nx, Ny, NX)
+        XFLUX_DEN_y  = zeros(Float64, Nz, Nx, Ny+1, NX)
+        XFLUX_DEN_z  = zeros(Float64, Nz+1, Nx, Ny, NX)
+   
+        acc_vars = AccumulativeVariables(Nx, Ny, Nz, NX)
+ 
+
+        valid_idx = zeros(Int64, 2, sum(mask2 .== 1.0))
+        let k = 1
+            for idx in CartesianIndices((Nx, Ny))
+                if mask2[idx] == 1.0
+                    valid_idx[1, k] = idx[1]
+                    valid_idx[2, k] = idx[2]
+
+                    k += 1
+                end
+            end
+
+            if k != size(valid_idx)[2] + 1
+                throw(ErrorException("Initialization error making `valid_idx`"))
+            end
+        end
+
+        current_substep = 1
+    
+        new(
+
+
+            cols,
+            Δz_T,
+            Δz_W,
+            rad_decay_coe,
+            rad_absorp_coe,
+            ASUM,
+            wksp,         
+            XFLUX_top,
+            XFLUX_bot,
+            XFLUX_CONV,
+            XFLUX_CONV_h,
+            XFLUX_DEN_x,
+            XFLUX_DEN_y,
+            XFLUX_DEN_z,
+            acc_vars,
+            valid_idx,
+            current_substep,
+        )
+    end
+end
+
+function genColView(
+    arr :: Union{AbstractArray{T, 3}, AbstractArray{T, 4}}
+) where T
+
+    # vectorization the for loop is not faster
+
+    s = size(arr)
+
+    if length(s) == 3
+
+        _, Nx, Ny = size(arr)
+        view_arr  = Array{SubArray}(undef, Nx, Ny)
+
+        for i=1:Nx, j=1:Ny
+            view_arr[i, j] = view(arr, :, i, j)
+        end
+
+    elseif length(s) == 4
+
+        _, Nx, Ny, NX = size(arr)
+        view_arr  = Array{SubArray}(undef, Nx, Ny, NX)
+
+        for i=1:Nx, j=1:Ny, x =1:NX
+            view_arr[i, j, x] = view(arr, :, i, j, x)
+        end
+
+    end
+
+    return view_arr
+end
+
+function genRadCoe(;
+    Nx       :: Int64,
+    Ny       :: Int64,
+    Nz       :: Int64,
+    Nz_av    :: AbstractArray{Int64,   2},
+    mask2    :: AbstractArray{Float64, 2},
+    ζ        :: Float64,
+    Δz_T     :: AbstractArray{Float64, 3},
+    z_bnd_av :: AbstractArray{Float64, 3},
+)
+
+    rad_decay_coe  = zeros(Float64, Nz, Nx, Ny)
+    rad_absorp_coe = zeros(Float64, Nz, Nx, Ny)
+
+    for i=1:Nx, j=1:Ny
+        
+        if mask2[i, j] == 0.0
+            continue
+        end
+
+        for k=1:Nz_av[i, j]
+            rad_decay_coe[k, i, j]  = exp(z_bnd_av[k, i, j] / ζ)         # From surface to top of the layer
+            rad_absorp_coe[k, i, j] = 1.0 - exp(- Δz_T[k, i, j] / ζ)
+        end
+        
+        # Since we assume the bottome of ocean absorbs anything
+        rad_absorp_coe[Nz_av[i, j], i, j] = 1.0
+    end
+
+    return rad_decay_coe, rad_absorp_coe
+        
+end
