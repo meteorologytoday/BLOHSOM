@@ -1,12 +1,8 @@
 mutable struct Workspace
 
-    fT :: Array
-    fU :: Array
-    fV :: Array
-
-    cT :: Array
-    cU :: Array
-    cV :: Array
+    T :: Array
+    U :: Array
+    V :: Array
 
     sT :: Array
     sU :: Array
@@ -19,54 +15,34 @@ mutable struct Workspace
     function Workspace(;
         Nx :: Int64,
         Ny :: Int64,
-        Nz_f :: Int64,
-        Nz_c :: Int64,
-        fT :: Int64=0,
-        fU :: Int64=0,
-        fV :: Int64=0,
-        cT :: Int64=0,
-        cU :: Int64=0,
-        cV :: Int64=0,
+        Nz :: Int64,
+        T :: Int64=0,
+        U :: Int64=0,
+        V :: Int64=0,
         sT :: Int64=0,
         sU :: Int64=0,
         sV :: Int64=0,
     )
 
 
-        _fT = []
-        _fU = []
-        _fV = []
-
-        _cT = []
-        _cU = []
-        _cV = []
+        _T = []
+        _U = []
+        _V = []
 
         _sT = []
         _sU = []
         _sV = []
 
-        for i=1:fT
-            push!(_fT, zeros(Float64, Nx, Ny, Nz_f))
+        for i=1:T
+            push!(_T, zeros(Float64, Nx, Ny, Nz))
         end 
 
-        for i=1:fU
-            push!(_fU, zeros(Float64, Nx, Ny, Nz_f))
+        for i=1:U
+            push!(_U, zeros(Float64, Nx, Ny, Nz))
         end 
 
-        for i=1:fV
-            push!(_fV, zeros(Float64, Nx, Ny+1, Nz_f))
-        end 
-
-        for i=1:cT
-            push!(_cT, zeros(Float64, Nx, Ny, Nz_c))
-        end 
-
-        for i=1:cU
-            push!(_cU, zeros(Float64, Nx, Ny, Nz_c))
-        end 
-
-        for i=1:cV
-            push!(_cV, zeros(Float64, Nx, Ny+1, Nz_c))
+        for i=1:V
+            push!(_V, zeros(Float64, Nx, Ny+1, Nz))
         end 
 
         for i=1:sT
@@ -83,12 +59,9 @@ mutable struct Workspace
 
 
         ptr = Dict(
-            :fT => 1,
-            :fU => 1,
-            :fV => 1,
-            :cT => 1,
-            :cU => 1,
-            :cV => 1,
+            :T => 1,
+            :U => 1,
+            :V => 1,
             :sT => 1,
             :sU => 1,
             :sV => 1,
@@ -96,8 +69,7 @@ mutable struct Workspace
 
 
         return new(
-            _fT, _fU, _fV,
-            _cT, _cU, _cV,
+            _T, _U, _V,
             _sT, _sU, _sV,
             ptr,
         )

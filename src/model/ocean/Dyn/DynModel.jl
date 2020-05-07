@@ -2,31 +2,34 @@ mutable struct DynModel
 
     env     :: DynEnv
     state   :: DynState
+    forcing :: DynForcing
     core    :: DynCore
     
     
     function DynModel(;
         gi :: PolelikeCoordinate.GridInfo,
         Δt,
-        Dh,
-        z_bnd_f, height_level_counts,
-        NX_passive=0,
+        Kh_barotropic,
+        Kh_baroclinic,
+        z_bnd,
+        mode,
         mask=nothing,
     )
 
         env = DynEnv(;
             gi = gi,
             Δt = Δt,
-            Dh = Dh,
+            Kh_barotropic = Kh_barotropic,
+            Kh_baroclinic = Kh_baroclinic,
             Nx = gi.Nx,
             Ny = gi.Ny,
-            z_bnd_f = z_bnd_f, 
-            height_level_counts = height_level_counts,
-            NX_passive = NX_passive,
+            z_bnd = z_bnd,
+            mode  = mode,
             mask=mask,
         )
 
-        state = DynState(env, :local)
+        state = DynState(env)
+        forcing = DynForcing(env)
         core  = DynCore(env, state)
 
         #=
@@ -50,6 +53,7 @@ mutable struct DynModel
         return new(
             env,
             state,
+            forcing,
             core,
         )
 

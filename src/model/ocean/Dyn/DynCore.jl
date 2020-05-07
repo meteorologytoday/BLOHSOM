@@ -29,16 +29,22 @@ mutable struct DynCore    # Adam Bashford
     ∂B∂y     :: AbstractArray{Float64, 3}
 
     layers   :: Layers
+
+    # Used by EKMAN scheme
+    M̃    :: AbstractArray{Complex{Float64}, 2}
+    ṽ_ek :: AbstractArray{Complex{Float64}, 2}
+    ṽ_rf :: AbstractArray{Complex{Float64}, 2}
+
  
     function DynCore(env, state)
         
         Nx = env.Nx
         Ny = env.Ny
-        Nz = env.Nz_c
+        Nz = env.Nz
 
         va = VerticalAverager(
-            z_bnd_f = env.z_bnd_f,
-            height_level_counts = env.height_level_counts
+            z_bnd_f = env.z_bnd,
+            height_level_counts = ones(Int64, Nz) 
         )
         
         println("Making Spatial Operators")
@@ -68,7 +74,7 @@ mutable struct DynCore    # Adam Bashford
         diffusion_solver = DiffusionSolver(;
             gi = env.gi,
             M  = s_ops,
-            D  = env.Dh,
+            K  = env.Kh_barotropic,
             Δt = env.Δt,
             mask2 = env.mask,
         )
@@ -86,14 +92,10 @@ mutable struct DynCore    # Adam Bashford
         wksp = Workspace(;
             Nx = Nx,
             Ny = Ny,
-            Nz_c = env.Nz_c,
-            Nz_f = env.Nz_f,
-            fT = 5,
-            fU = 5,
-            fV = 5,
-            cT = 5,
-            cU = 6,
-            cV = 6,
+            Nz = Nz,
+            T = 5,
+            U = 6,
+            V = 6,
             sT = 7,
             sU = 5,
             sV = 5,
@@ -117,6 +119,9 @@ mutable struct DynCore    # Adam Bashford
             setfield!(layers, var, genLayerView(ref))
         end
 
+        M̃    = zeros(Complex{Float64}, Nx, Ny)
+        ṽ_ek = zeros(Complex{Float64}, Nx, Ny)
+        ṽ_rf = zeros(Complex{Float64}, Nx, Ny)
 
         new(
             c_ops,

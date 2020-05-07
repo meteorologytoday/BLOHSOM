@@ -8,7 +8,7 @@ mutable struct DiffusionSolver
 
     M :: DynamicAdvSpeedUpMatrix
    
-    D  :: Float64
+    K  :: Float64
     Δt :: Float64
     α  :: Float64
 
@@ -29,12 +29,12 @@ mutable struct DiffusionSolver
     function DiffusionSolver(;
         gi             :: PolelikeCoordinate.GridInfo,
         mask2          :: Union{AbstractArray{Float64, 2}, Nothing} = nothing,
-        D              :: Float64,
+        K              :: Float64,
         Δt             :: Float64,
         M              :: Union{DynamicAdvSpeedUpMatrix, Nothing} = nothing
     )
 
-        α = 1.0 / (D * Δt)
+        α = 1.0 / (K * Δt)
 
         if M == nothing
             println("Mask not provided. Use mask provided by GridInfo.")
@@ -87,7 +87,7 @@ mutable struct DiffusionSolver
             UU_length,
             VV_length,
             M,
-            D,
+            K,
             Δt,
             α,
             UU_send_U,

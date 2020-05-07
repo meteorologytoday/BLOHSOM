@@ -5,7 +5,7 @@ function decompose!(;
     va       :: VerticalAverager,
 )
 
-    Nx, Ny = size(mean)
+    Nx, Ny, Nz = size(anomaly)
 
     
     calAverage_c2s!(
@@ -17,7 +17,7 @@ function decompose!(;
     for i=1:Nx, j=1:Ny
 
         m = mean[i, j]
-        for k=1:va.Nz_c
+        for k=1:Nz
             anomaly[i, j, k] = total[i, j, k] - m
         end
 
@@ -38,10 +38,7 @@ function advectDynamic!(
   0.005663 seconds (21 allocations: 1.572 MiB)
   0.001000 seconds (100 allocations: 3.063 KiB)
 =#
-
-
     decomposeModes!(model)
-
 #    println("Do Diffusion!")
 #    doHDiffusionBarotropic!(model)
 
@@ -71,14 +68,14 @@ function doHDiffusionBarotropic!(
     env = model.env
     wksp = core.wksp
     layers = core.layers 
-    #wksp_cU = getSpace!(wksp, :cU)
-    #wksp_cV = getSpace!(wksp, :cV)
+    #wksp_cU = getSpace!(wksp, :U)
+    #wksp_cV = getSpace!(wksp, :V)
     #wksp_cU .= state.u_total 
     #wksp_cV .= state.v_total 
     #wksp_cU .= state.u_total 
     #wksp_cV .= state.v_total 
 #= 
-    for k = 1:env.Nz_c
+    for k = 1:env.Nz
 
         solveDiffusion!(
             core.diffusion_solver, :U,
@@ -113,7 +110,7 @@ function doHDiffusionBarotropic!(
     )
 
 
-    for k = 1:env.Nz_c
+    for k = 1:env.Nz
         @. layers.u_total[k] = state.U + layers.u[k]
     end
 end
@@ -142,6 +139,8 @@ function calAuxV!(
     model   :: DynModel,
 )
 
+    @unpack model
+
     state = model.state
     core = model.core
     c_ops = core.c_ops
@@ -155,20 +154,20 @@ function calAuxV!(
     τx_acc = getSpace!(wksp, :sU)
     τy_acc = getSpace!(wksp, :sV)
 
-    mul2!(τx_acc, s_ops.U_interp_T, state.τx)
-    mul2!(τy_acc, s_ops.V_interp_T, state.τy)
-    τx_acc ./= (ρ_fw * env.H_c[1])
-    τy_acc ./= (ρ_fw * env.H_c[1])
+    mul2!(τx_acc, s_ops.U_interp_T, fr.τx)
+    mul2!(τy_acc, s_ops.V_interp_T, fr.τy)
+    τx_acc ./= (ρ_fw * ev.H[1])
+    τy_acc ./= (ρ_fw * ev.H[1])
  
     # cal ∇b
     ∂B∂x   = core.∂B∂x
     ∂B∂y   = core.∂B∂y
-    mul3!(core.∂B∂x, c_ops.U_∂x_T, state.B)
-    mul3!(core.∂B∂y, c_ops.V_∂y_T, state.B)
+    mul3!(core.∂B∂x, c_ops.U_∂x_T, fr.B)
+    mul3!(core.∂B∂y, c_ops.V_∂y_T, fr.B)
 
     # cal Coriolis force
-    fu   = getSpace!(wksp, :cV)
-    fv   = getSpace!(wksp, :cU)
+    fu   = getSpace!(wksp, :V)
+    fv   = getSpace!(wksp, :U)
     mul3!(fu, c_ops.V_f_U, state.u_total)   # fu on V grid
     mul3!(fv, c_ops.U_f_V, state.v_total)   # fv on U grid
     #println("fu: ", fu[30, 29, 1])   
@@ -176,10 +175,10 @@ function calAuxV!(
  
     # ===== [ BEGIN cal (v⋅∇)v ] =====
     #=
-    ∂u∂x = getSpace!(wksp, :cU)
-    ∂u∂y = getSpace!(wksp, :cU)
-    ∂v∂x = getSpace!(wksp, :cV)
-    ∂v∂y = getSpace!(wksp, :cV)
+    ∂u∂x = getSpace!(wksp, :U)
+    ∂u∂y = getSpace!(wksp, :U)
+    ∂v∂x = getSpace!(wksp, :V)
+    ∂v∂y = getSpace!(wksp, :V)
     mul3!(∂u∂x, c_ops.U_∂x_U, state.u)
     mul3!(∂u∂y, c_ops.U_∂y_U, state.u)
     mul3!(∂v∂x, c_ops.V_∂x_V, state.v)
@@ -190,19 +189,19 @@ function calAuxV!(
     # On U grid
 
     
-    u∂u∂x = getSpace!(wksp, :cU)
-    v∂u∂y = getSpace!(wksp, :cU)
+    u∂u∂x = getSpace!(wksp, :U)
+    v∂u∂y = getSpace!(wksp, :U)
     mul3!(v∂u∂y, c_ops.U_interp_V, state.v_total)  # store interpolated v into v∂u∂y
-    for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz_c
+    for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz
         u∂u∂x[i, j, k]  = state.u[i, j, k] * ∂u∂x[i, j, k]
         v∂u∂y[i, j, k] *=                    ∂u∂y[i, j, k]
     end
 
     # On V grid
-    u∂v∂x = getSpace!(wksp, :cV)
-    v∂v∂y = getSpace!(wksp, :cV)
+    u∂v∂x = getSpace!(wksp, :V)
+    v∂v∂y = getSpace!(wksp, :V)
     mul3!(u∂v∂x, c_ops.V_interp_U, state.u_total)  # store interpolated u into u∂v∂x
-    for i=1:env.Nx, j=1:env.Ny+1, k=1:env.Nz_c
+    for i=1:env.Nx, j=1:env.Ny+1, k=1:env.Nz
         u∂v∂x[i, j, k] *=                     ∂v∂x[i, j, k]
         v∂v∂y[i, j, k]  = state.v[i, j, k]  * ∂v∂y[i, j, k]
     end
@@ -262,7 +261,7 @@ function calAuxV!(
     @. core.v_aux = state.v_total + Δt * ABIII(G_v_Δt0, G_v_Δt1, G_v_Δt2)
 
     #=
-    @time for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz_c
+    @time for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz
         core.u_aux[i, j, k] = state.u_total[i, j, k] + Δt *
            ABIII(
                 state.G_u[i, j, k, Δt0],
@@ -274,7 +273,7 @@ function calAuxV!(
     #println("G_u")
     #println(state.G_u[1, 2, 2, Δt0])
 
-    for i=1:env.Nx, j=1:env.Ny+1, k=1:env.Nz_c
+    for i=1:env.Nx, j=1:env.Ny+1, k=1:env.Nz
         core.v_aux[i, j, k] = state.v_total[i, j, k] + Δt *
             ABIII(
                 G_v[i, j, k, Δt0],
@@ -342,22 +341,25 @@ function solveΦ!(
     lhs = getSpace!(core.wksp, :sT)
     rhs = getSpace!(core.wksp, :sT)
 
-    lhs_TT = view(getSpace!(core.wksp, :sT), 1:solver.TT_length)
-    rhs_TT = view(getSpace!(core.wksp, :sT), 1:solver.TT_length)
+    lhs_eT = view(getSpace!(core.wksp, :sT), 1:solver.eT_length)
+    rhs_eT = view(getSpace!(core.wksp, :sT), 1:solver.eT_length)
 
     α = solver.α
     
     @. rhs = - core.Φ_aux * α
 
-    mul!(rhs_TT, solver.TT_send_T, view(rhs, :))
+    mul!(rhs_eT, solver.eT_send_T, view(rhs, :))
  
     ldiv!(
-        lhs_TT,
+        lhs_eT,
         solver.tool_mtx.MoLap,
-        rhs_TT,
+        rhs_eT,
     )
         
-    mul!(view(state.Φ, :), solver.T_send_TT, lhs_TT)
+    mul!(view(state.Φ, :), solver.T_send_eT, lhs_eT)
+    
+#    lhs_eT .= 1000.0
+#    mul!(view(state.Φ, :), solver.T_send_eT, lhs_eT)
 
 end
 
@@ -395,7 +397,7 @@ function updateV!(
     ΔtfricV .*= Δt/τ
 
     
-    for k=1:env.Nz_c
+    for k=1:env.Nz
         u_total = view(state.u_total, :, :, k)
         v_total = view(state.v_total, :, :, k)
         u_aux = view(core.u_aux, :, :, k)
@@ -406,7 +408,7 @@ function updateV!(
     end
 
 #= 
-    for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz_c
+    for i=1:env.Nx, j=1:env.Ny, k=1:env.Nz
         state.u_total[i, j, k] = core.u_aux[i, j, k] - Δt∂Φ∂x[i, j] - ΔtfricU[i, j]
         state.v_total[i, j, k] = core.v_aux[i, j, k] - Δt∂Φ∂y[i, j] - ΔtfricV[i, j]
     end

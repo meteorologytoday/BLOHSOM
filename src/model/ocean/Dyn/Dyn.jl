@@ -12,7 +12,15 @@ module Dyn
     include("../../../share/ocean_state_function.jl")
 
 
-
+    macro unpack(model)
+        return esc(:( 
+            co = $(model).core;
+            st = $(model).state;
+            fr = $(model).forcing;
+            ev = $(model).env;
+        ))
+    end
+ 
 
     @inline function mul2!(
         a :: AbstractArray{Float64, 2},
@@ -59,6 +67,7 @@ module Dyn
 
     include("DynEnv.jl")
     include("DynState.jl")
+    include("DynForcing.jl")
     include("DynCore.jl")
     include("DynModel.jl")
     include("step_model.jl")
@@ -66,23 +75,24 @@ module Dyn
 
     include("varlist.jl")
 
-    macro loop_hor(ocn, idx1, idx2, stmts)
-        return :( for grid_idx in 1:size($(esc(ocn)).valid_idx)[2]
-
-            $(esc(idx1)) = $(esc(ocn)).valid_idx[1, grid_idx]
-            $(esc(idx2)) = $(esc(ocn)).valid_idx[2, grid_idx]
-            $(esc(stmts))
-
-        end )
-    end
-
-
-
+   
     function stepModel!(
-        model :: DynModel,
+        m :: DynModel,
     )
-        reset!(model.core.wksp)
-        advectDynamic!(model)
+        @unpack m
+
+        reset!(co.wksp)
+
+        if ev.mode == :PROG
+            
+            advectDynamic!(m)
+
+        elseif env.mode == :EKMAN
+
+            assignEkmanFlow!(m) 
+
+        end
+
     end
 
 
