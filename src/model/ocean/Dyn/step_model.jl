@@ -68,28 +68,7 @@ function doHDiffusionBarotropic!(
     env = model.env
     wksp = core.wksp
     layers = core.layers 
-    #wksp_cU = getSpace!(wksp, :U)
-    #wksp_cV = getSpace!(wksp, :V)
-    #wksp_cU .= state.u_total 
-    #wksp_cV .= state.v_total 
-    #wksp_cU .= state.u_total 
-    #wksp_cV .= state.v_total 
-#= 
-    for k = 1:env.Nz
-
-        solveDiffusion!(
-            core.diffusion_solver, :U,
-            view(wksp_cU  , :, :, k),
-            view(state.u_total, :, :, k),
-        )
-
-        solveDiffusion!(
-            core.diffusion_solver, :V,
-            view(wksp_cV  , :, :, k),
-            view(state.v_total, :, :, k),
-        )
-    end
-=#
+    
     wksp_sU = getSpace!(wksp, :sU)
     wksp_sV = getSpace!(wksp, :sV)
 
@@ -151,25 +130,29 @@ function calAuxV!(
   
   
     # cal τx_acc, τy_acc
-    τx_acc = getSpace!(wksp, :sU)
-    τy_acc = getSpace!(wksp, :sV)
+    τx_acc = getSpace!(wksp, :sT)
+    τy_acc = getSpace!(wksp, :sT)
 
-    mul2!(τx_acc, s_ops.U_interp_T, fr.τx)
-    mul2!(τy_acc, s_ops.V_interp_T, fr.τy)
-    τx_acc ./= (ρ_fw * ev.H[1])
-    τy_acc ./= (ρ_fw * ev.H[1])
+    
+
+    @. τx_acc = fr.τx / (ρ_fw * ev.H[1])
+    @. τy_acc = fr.τy / (ρ_fw * ev.H[1])
  
     # cal ∇b
     ∂B∂x   = core.∂B∂x
     ∂B∂y   = core.∂B∂y
-    mul3!(core.∂B∂x, c_ops.U_∂x_T, fr.B)
-    mul3!(core.∂B∂y, c_ops.V_∂y_T, fr.B)
+    mul3!(core.∂B∂x, c_ops.T_∂x_T, fr.B)
+    mul3!(core.∂B∂y, c_ops.T_∂y_T, fr.B)
 
     # cal Coriolis force
-    fu   = getSpace!(wksp, :V)
-    fv   = getSpace!(wksp, :U)
-    mul3!(fu, c_ops.V_f_U, state.u_total)   # fu on V grid
-    mul3!(fv, c_ops.U_f_V, state.v_total)   # fv on U grid
+    fu   = getSpace!(wksp, :T)
+    fv   = getSpace!(wksp, :T)
+    #println("size of fu: ", size(fu))
+    #println("size of T_f_T: ", size(c_ops.T_f_T))
+    #println("sizeof u_total: ", size(state.u_total))
+
+    mul3!(fu, c_ops.T_f_T, state.u_total)   # fu on V grid
+    mul3!(fv, c_ops.T_f_T, state.v_total)   # fv on U grid
     #println("fu: ", fu[30, 29, 1])   
 
  
@@ -303,31 +286,29 @@ function calAuxΦ!(
     mask  = env.mask
     Δt    = env.Δt
 
-    
+ 
+    u_T     = getSpace!(wksp, :sT)
+    v_T     = getSpace!(wksp, :sT)
+   
     Φu     = getSpace!(wksp, :sU)
     Φv     = getSpace!(wksp, :sV)
     DIV_Φu = getSpace!(wksp, :sT)
     DIV_Φv = getSpace!(wksp, :sT)
 
-    calAverage_c2s!(va, core.u_aux, Φu)
-    calAverage_c2s!(va, core.v_aux, Φv)
-    
-    Φu .*= env.Φ_total
-    Φv .*= env.Φ_total
+    calAverage_c2s!(va, core.u_aux, u_T)
+    calAverage_c2s!(va, core.v_aux, v_T)
+
+    mul2!(Φu, s_ops.U_interp_T, u_T)
+    mul2!(Φv, s_ops.V_interp_T, v_T)
+
+    @. Φu *= env.Φ_total
+    @. Φv *= env.Φ_total
 
     mul2!(DIV_Φu, s_ops.T_DIVx_U,   Φu)
     mul2!(DIV_Φv, s_ops.T_DIVy_V,   Φv)
-
  
     @. core.Φ_aux = state.Φ - Δt * (DIV_Φu + DIV_Φv)
-   
-    #= 
-    for i=1:env.Nx, j=1:env.Ny
-        core.Φ_aux[i, j] = state.Φ[i, j] - Δt * (
-            DIV_Φu[i, j] + DIV_Φv[i, j]
-        )
-    end
-    =#
+
 end
 
 function solveΦ!(
@@ -375,18 +356,18 @@ function updateV!(
     wksp = core.wksp
     Δt   = model.env.Δt
     
-    Δt∂Φ∂x = getSpace!(wksp, :sU)
-    Δt∂Φ∂y = getSpace!(wksp, :sV)
+    Δt∂Φ∂x = getSpace!(wksp, :sT)
+    Δt∂Φ∂y = getSpace!(wksp, :sT)
      
-    mul2!(Δt∂Φ∂x, s_ops.U_∂x_T, state.Φ)
-    mul2!(Δt∂Φ∂y, s_ops.V_∂y_T, state.Φ)
+    mul2!(Δt∂Φ∂x, s_ops.T_∂x_T, state.Φ)
+    mul2!(Δt∂Φ∂y, s_ops.T_∂y_T, state.Φ)
 
     Δt∂Φ∂x .*= Δt
     Δt∂Φ∂y .*= Δt
 
     # TODO: NEED to use AUXILIRAY U, V instead of old U, V 
-    ΔtfricU = getSpace!(wksp, :sU)
-    ΔtfricV = getSpace!(wksp, :sV)
+    ΔtfricU = getSpace!(wksp, :sT)
+    ΔtfricV = getSpace!(wksp, :sT)
 
     ΔtfricU .= state.U
     ΔtfricV .= state.V
@@ -396,7 +377,6 @@ function updateV!(
     ΔtfricU .*= Δt/τ
     ΔtfricV .*= Δt/τ
 
-    
     for k=1:env.Nz
         u_total = view(state.u_total, :, :, k)
         v_total = view(state.v_total, :, :, k)

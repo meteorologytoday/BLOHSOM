@@ -44,7 +44,7 @@ module Tmd
     include("../../../share/ocean_state_function.jl")
 
     include("../MatrixOperators.jl")
-    include("Workspace.jl")
+    include("../Workspace.jl")
     #include("AdvectionSpeedUpMatrix.jl.old")
     include("AdvectionSpeedUpMatrix.jl")
     include("AccumulativeVariables.jl")

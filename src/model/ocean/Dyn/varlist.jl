@@ -11,11 +11,11 @@ function getCompleteVariableList(m::DynModel)
         return Dict(
             "Phi"               => ( s.Φ,                                ("Nx", "Ny",) ),
             "U"                 => ( s.U,                                ("Nx", "Ny",) ),
-            "V"                 => ( s.V,                                ("Nx", "Nyp1",) ),
+            "V"                 => ( s.V,                                ("Nx", "Ny",) ),
             "u_total"           => ( s.u_total,                          ("Nx", "Ny", "Nz") ),
-            "v_total"           => ( s.v_total,                          ("Nx", "Nyp1", "Nz") ),
+            "v_total"           => ( s.v_total,                          ("Nx", "Ny", "Nz") ),
             "u"                 => ( s.u,                                ("Nx", "Ny", "Nz") ),
-            "v"                 => ( s.v,                                ("Nx", "Nyp1", "Nz") ),
+            "v"                 => ( s.v,                                ("Nx", "Ny", "Nz") ),
             "B"                 => ( f.B,                                ("Nx", "Ny", "Nz") ),
         )
 end

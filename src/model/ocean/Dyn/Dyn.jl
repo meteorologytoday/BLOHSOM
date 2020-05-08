@@ -58,11 +58,12 @@ module Dyn
 
     include("../MatrixOperators.jl")
     include("../VerticalAverager.jl")
+    include("../Workspace.jl")
 
     include("AdvectionSpeedUpMatrix_dyn.jl")
     include("PhiSolver.jl")
     include("DiffusionSolver.jl")
-    include("Workspace.jl")
+
 
 
     include("DynEnv.jl")

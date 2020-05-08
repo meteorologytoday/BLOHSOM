@@ -130,6 +130,7 @@ mutable struct TmdCore    # Adam Bashford
             sT = 0,
             sU = 0,
             sV = 0,
+            shape = :zxy,
         ) 
 
 

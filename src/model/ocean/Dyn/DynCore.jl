@@ -99,14 +99,15 @@ mutable struct DynCore    # Adam Bashford
             sT = 7,
             sU = 5,
             sV = 5,
+            shape = :xyz,
         ) 
 
         u_aux = zeros(Float64, Nx, Ny,   Nz)
-        v_aux = zeros(Float64, Nx, Ny+1, Nz)
+        v_aux = zeros(Float64, Nx, Ny, Nz)
         Φ_aux = zeros(Float64, Nx, Ny)
 
         ∂B∂x  = zeros(Float64, Nx, Ny,   Nz)
-        ∂B∂y  = zeros(Float64, Nx, Ny+1, Nz)
+        ∂B∂y  = zeros(Float64, Nx, Ny, Nz)
         
         # making layer-wise views
         layers = Layers()

@@ -16,6 +16,7 @@ mutable struct Workspace
 
     ptr :: Dict
 
+    shape :: Symbol
 
     function Workspace(;
         Nx :: Int64,
@@ -28,6 +29,7 @@ mutable struct Workspace
         sT :: Int64=0,
         sU :: Int64=0,
         sV :: Int64=0,
+        shape :: Symbol,
     )
 
 
@@ -50,11 +52,16 @@ mutable struct Workspace
             :sV => 1,
         )
 
+        if ! (shape in (:xyz, :zxy))
+            throw(ErrorException("Only :xyz and :zxy are allowed. Unknown shape: " * string(shape) ))
+        end
+
         return new(
             Nx, Ny, Nz,
             _T, _U, _V, _W,
             _sT, _sU, _sV,
             ptr,
+            shape,
         )
 
     end
@@ -103,14 +110,18 @@ function genEmptyGrid(
 )
     Nx, Ny, Nz = wksp.Nx, wksp.Ny, wksp.Nz
     dim = Dict(
-        :T => (Nz,   Nx, Ny  ),
-        :U => (Nz,   Nx, Ny  ),
-        :V => (Nz,   Nx, Ny+1),
-        :W => (Nz+1, Nx, Ny  ),
-        :sT => ( Nx, Ny  ),
-        :sU => ( Nx, Ny  ),
-        :sV => ( Nx, Ny+1),
+        :T =>  [Nx, Ny  , Nz],
+        :U =>  [Nx, Ny  , Nz],
+        :V =>  [Nx, Ny+1, Nz],
+        :W =>  [Nx, Ny  , Nz+1],
+        :sT => [Nx, Ny  ],
+        :sU => [Nx, Ny  ],
+        :sV => [Nx, Ny+1],
     )[grid]
+
+    if length(dim) == 3 && wksp.shape == :zxy
+        circshift!(dim, 1)
+    end
 
     return zeros(dtype, dim...)
 
