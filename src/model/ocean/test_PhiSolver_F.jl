@@ -30,6 +30,7 @@ mask2 = ones(Float64, gi.Nx, gi.Ny);
 
 mask2[:, 1] .= 0
 mask2[:, end] .= 0
+mask2[50:60, 25:35] .= 0
 
 println("Making ΦSolver")
 @time cM = PhiSolver(;
@@ -86,6 +87,7 @@ Dataset("output_phisolver.nc", "c") do ds
 #        ("dfdx_true",  dfdx_true, ("Nx", "Ny"), Dict()),
 #        ("dfdy_true",  dfdy_true, ("Nx", "Ny"), Dict()),
         ("Lapf_true",  Lapf_true, ("Nx", "Ny"), Dict()),
+        ("mask2",  mask2, ("Nx", "Ny"), Dict()),
 
     ]
 

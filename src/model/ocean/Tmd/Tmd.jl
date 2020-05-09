@@ -95,7 +95,7 @@ module Tmd
         end
 
         #println("sum of nswflx: ", sum(fr.nswflx))
-        println("co.current_substep: ", co.current_substep)
+        #println("co.current_substep: ", co.current_substep)
         advectTracer!(m)
         doMixedLayerDynamics!(m)
 

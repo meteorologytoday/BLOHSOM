@@ -31,6 +31,8 @@ mask2 = ones(Float64, gi.Nx, gi.Ny);
 mask2[:, 1] .= 0
 mask2[:, end] .= 0
 
+mask2[50:60, 25:35] .= 0
+
 println("Making ΦSolver")
 @time cM = PhiSolver(;
     gi    = gi,
@@ -47,6 +49,9 @@ f         =   cos.(π/gi.Ly * gi.c_y) .* sin.(2*gi.c_lon);
 dfdx_true =   cos.(π/gi.Ly * gi.c_y) .* cos.(2*gi.c_lon) * 2 / gi.R;
 dfdy_true = - sin.(π/gi.Ly * gi.c_y) .* sin.(2*gi.c_lon) * π / gi.Ly;
 Lapf_true =   - f .* ( (2/ gi.R)^2 + (π/gi.Ly)^2 );
+
+f .*= mask2
+
 
 f = f[:]
 
@@ -81,6 +86,7 @@ Dataset("output_phisolver.nc", "c") do ds
         ("dfdx_true",  dfdx_true, ("Nx", "Ny"), Dict()),
         ("dfdy_true",  dfdy_true, ("Nx", "Ny"), Dict()),
         ("Lapf_true",  Lapf_true, ("Nx", "Ny"), Dict()),
+        ("mask2",  mask2, ("Nx", "Ny"), Dict()),
 
     ]
 

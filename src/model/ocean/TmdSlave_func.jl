@@ -27,8 +27,8 @@ function setupBinding!(
     noXdim  = false
 
     bindings = (
-        ((:u_total_c, :cU, :xyz, bd[:u_total_c], noXdim), :u_total_c),
-        ((:v_total_c, :cV, :xyz, bd[:v_total_c], noXdim), :v_total_c),
+        ((:u_c,       :cU, :xyz, bd[:u_c], noXdim), :u_c),
+        ((:v_c,       :cV, :xyz, bd[:v_c], noXdim), :v_c),
         ((:B_c,       :cT, :xyz, bd[:B_c],       noXdim), :B_c),
         
         # T, S, FLDO and such
@@ -121,13 +121,13 @@ function projVelocity!(
 
     projVertical_c2f!(
         slave.va,
-        slave.buffer_data[:u_total_c],
+        slave.buffer_data[:u_c],
         PermutedDimsArray(slave.model.forcing.u_U, (2, 3, 1)),
     )
  
     projVertical_c2f!(
         slave.va,
-        slave.buffer_data[:v_total_c],
+        slave.buffer_data[:v_c],
         PermutedDimsArray(slave.model.forcing.v_V, (2, 3, 1)),
     )
  

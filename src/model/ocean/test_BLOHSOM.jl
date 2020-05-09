@@ -1,6 +1,6 @@
 using ArgParse
 using JSON
-
+using Formatting
 include("BLOHSOM.jl")
 include("../../share/constants.jl")
 
@@ -37,13 +37,22 @@ else
 
 end
 
-run_days = 360
+
+#run_days =6*24
+#coupling = 1
+#substeps = 1
+
+
+run_days = 120
 coupling = 4
-substeps = 3
+substeps = 6
+
+
+
 
 run_steps = run_days * coupling
 
-Δt_day = 86400.0
+
 #86400.0
 
 Nz_f = 20
@@ -51,10 +60,10 @@ Nz_f = 20
 hrgrid_file = "/seley/tienyiah/CESM_domains/test_domains/domain.ocn.gx3v7.120323.nc"
 topo_file = "/seley/tienyiah/CESM_domains/test_domains/topo.gx3v7.nc"
 
-hrgrid_file = "/seley/tienyiah/CESM_domains/test_domains/domain.lnd.fv4x5_gx3v7.091218.nc"
-topo_file = "/seley/tienyiah/CESM_domains/test_domains/topo.fv4x5.nc"
+#hrgrid_file = "/seley/tienyiah/CESM_domains/test_domains/domain.lnd.fv4x5_gx3v7.091218.nc"
+#topo_file = "/seley/tienyiah/CESM_domains/test_domains/topo.fv4x5.nc"
 
-hrgrid_file = "/seley/tienyiah/CESM_domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc"
+#hrgrid_file = "/seley/tienyiah/CESM_domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc"
 
 gf = GridFiles.CurvilinearSphericalGridFile(
     hrgrid_file,
@@ -73,18 +82,24 @@ gf = GridFiles.CylindricalGridFile(;
         lat0 = 0.0 |> deg2rad,
         β    = 2*Ωe / Re,
 )
-xcutoff = 1
-ycutoff = 1
-
-gf.mask                       .= 1
-gf.mask[:, 1:ycutoff]         .= 0 
-gf.mask[:, end-ycutoff+1:end] .= 0 
-
-gf.mask[1:xcutoff, :]         .= 0 
-gf.mask[end-xcutoff+1:end, :] .= 0 
 =#
+#xcutoff = 1
 
-gf.mask = 1.0 .- gf.mask
+#ycutoff = 3
+
+#gf.mask                       .= 1
+#gf.mask[:, 1:ycutoff]         .= 0 
+#gf.mask[:, end-ycutoff+1:end] .= 0 
+
+#gf.mask[1:xcutoff, :]         .= 0 
+#gf.mask[end-xcutoff+1:end, :] .= 0 
+
+
+#gf.mask = 1.0 .- gf.mask
+#ycutoff = 2
+
+#gf.mask[:, 1:ycutoff]         .= 0 
+#gf.mask[:, end-ycutoff+1:end] .= 0 
 
 gi = PolelikeCoordinate.genGridInfo(gf);
 
@@ -92,7 +107,7 @@ gi = PolelikeCoordinate.genGridInfo(gf);
 topo = similar(gf.mask)
 topo .= -4000
 z_bnd_f = collect(Float64, range(0.0, -500.0, length=21))
-push!(z_bnd_f, -3999)
+push!(z_bnd_f, -4000.0)
 ocn_env = BLOHSOM.OcnEnv(
     hrgrid                = gf,
     topo_file             = topo_file,
@@ -108,9 +123,9 @@ ocn_env = BLOHSOM.OcnEnv(
     Kh_m_barotropic       = 10000.0,
     Kh_m_baroclinic       = 1000.0,
     Kv_m_baroclinic       = 1e-5,
-    τ_barotropic_bottomfric = 120.0 * 86400,
-    τ_barotropic_coastfric  = 120.0 * 86400,
-    Kh_X                  = [1e4, 1e-5], 
+    τ_barotropic_bottomfric = 120.0 * 86400.0,
+    τ_barotropic_coastfric  = 120.0 * 86400.0,
+    Kh_X                  = [1e3, 1e-5], 
     Kv_X                  = [1e-5, 1e-5], 
     R                     = 0.48,
     ζ                     = 23.0,
@@ -135,7 +150,7 @@ model = BLOHSOM.init!(ocn_env)
 du = model.shared_data.data_units
 #du[:Φ].data .= 0.01 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)).^2) / (σ^2.0) / 2)
 
-σz = 50.0
+σz = 150.0
 σ = 750e3
 σ_warmpool = 1000e3
 
@@ -196,19 +211,21 @@ RecordTool.record!(recorder)
 RecordTool.avgAndOutput!(recorder)
 
 
-@time for step=1:run_steps
-    println("##### Run steps ", step)
+@time for day=1:run_days
+    println(format("##### Run Day {:d} #####", day ))
 
    
-    if step < 20 
-#        du[:SWFLX].data .= - 1000.0 * exp.(- ( (gi.c_y ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
+    if day < 20 
+    #    du[:SWFLX].data .= - 1000.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
     else
-#        du[:SWFLX].data .= 0.0
+    #    du[:SWFLX].data .= 0.0
     end
 
-    @time for c = 1:coupling    
+    @time for c = 1:coupling
+        print(format(" - Coupling: {:d}/{:d}\r", c, coupling))
         BLOHSOM.stepModel!(model, false)
         RecordTool.record!(recorder)
     end
     RecordTool.avgAndOutput!(recorder)
 end
+println("Done.")

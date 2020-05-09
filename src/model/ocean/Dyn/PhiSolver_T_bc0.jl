@@ -13,6 +13,8 @@ mutable struct PhiSolver
    
     T_Lap_T
     tool_mtx
+    
+    wksp
 
     function PhiSolver(;
         gi             :: PolelikeCoordinate.GridInfo,
@@ -103,9 +105,17 @@ mutable struct PhiSolver
         #    Lap   = lu(eT_Lap_eT),
             MoLap = lu(eT_MoLap_eT),
         )
-        
+ 
+        eT_length = size(eT_MoLap_eT)[1]
+        wksp = (
+            rhs_T = zeros(Float64, Nx, Ny),
+            rhs_eT = zeros(Float64, eT_length),
+            lhs_eT = zeros(Float64, eT_length),
+            lhs_T  = zeros(Float64, Nx * Ny),
+        )
+       
         return new(
-            size(eT_MoLap_eT)[1],
+            eT_length,
             M,
             α,
             eT_send_T,
@@ -114,8 +124,26 @@ mutable struct PhiSolver
             eT_MoLap_eT,
             T_Lap_T,
             tool_mtx,
+            wksp,
         )
 
     end
 end
 
+function solvePhi!(
+    solver :: PhiSolver,
+    input  :: AbstractArray{Float64},  # Φ_aux
+    output :: AbstractArray{Float64}, 
+)
+
+    wksp = solver.wksp
+
+    @. wksp.rhs_T = - input * solver.α
+    output .= 0.0    
+    
+    mul!(wksp.rhs_eT, solver.eT_send_T, view(wksp.rhs_T,:))
+    ldiv!(wksp.lhs_eT, solver.tool_mtx.MoLap, wksp.rhs_eT)
+
+    mul!(view(output, :),      solver.T_send_eT,    wksp.lhs_eT)
+
+end

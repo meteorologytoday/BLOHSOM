@@ -11,8 +11,10 @@ function setupBinding!(
     du_there = sd.data_units
 
     bindings = (
-        (DataUnit(:u_total, :cU, :xyz, s.u_total, false), :u_total_c),
-        (DataUnit(:v_total, :cV, :xyz, s.v_total, false), :v_total_c),
+        #(DataUnit(:u_total, :cU, :xyz, s.u_total, false), :u_total_c),
+        #(DataUnit(:v_total, :cV, :xyz, s.v_total, false), :v_total_c),
+        (DataUnit(:u,       :cU, :xyz, s.u, false), :u_c),
+        (DataUnit(:v,       :cV, :xyz, s.v, false), :v_c),
         (DataUnit(:B,       :cT, :xyz, f.B,       false), :B_c      ),
         (DataUnit(:Φ,       :sT, :xy , s.Φ,       false), :Φ        ),
         (DataUnit(:∂B∂x,    :cU, :xyz, c.∂B∂x,    false), :∂B∂x     ),

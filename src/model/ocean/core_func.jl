@@ -154,7 +154,7 @@ end
 
 function regBindingGroups!(model::Model)
     groups = Dict(
-        :DYN2TMD     => (:u_total_c, :v_total_c),
+        :DYN2TMD     => (:u_c, :v_c),
         :TMD2DYN     => (:B_c,),
         :TMDBND      => (:X, :X_ML, :h_ML, :FLDO),
         :END_DYN2MAS => (:Φ, :∂B∂x, :∂B∂y),
@@ -203,8 +203,8 @@ function regSharedData!(model::Model)
         (:FLDO,  :sT, :xy,    Int64),
         
         # These are used by dyn_core 
-        (:u_total_c, :cU, :xyz, Float64),
-        (:v_total_c, :cV, :xyz, Float64),
+        (:u_c, :cU, :xyz, Float64),
+        (:v_c, :cV, :xyz, Float64),
         (:B_c,       :cT, :xyz, Float64),
         (:Φ,         :sT, :xy,  Float64),
         (:∂B∂x,      :cU, :xyz, Float64),

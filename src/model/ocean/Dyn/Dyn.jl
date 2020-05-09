@@ -63,7 +63,8 @@ module Dyn
     include("AdvectionSpeedUpMatrix_dyn.jl")
     #include("PhiSolver.jl")
     #include("PhiSolver_F.jl")
-    include("PhiSolver.jl.old")
+    #include("PhiSolver.jl.old")
+    include("PhiSolver_T_bc0.jl")
     include("DiffusionSolver.jl")
 
 

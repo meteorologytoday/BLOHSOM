@@ -113,7 +113,7 @@ function solvePhi!(
     
     mul!( wksp.rhs_eF, solver.eF_interp_T, view(wksp.rhs_T, :))
     
-    ldiv!(wksp.lhs_eF, solver.tool_mtx.Lap, wksp.rhs_eF)
+    ldiv!(wksp.lhs_eF, solver.tool_mtx.MoLap, wksp.rhs_eF)
 
     mul!(wksp.lhs_F,      solver.F_send_eF,    wksp.lhs_eF)
     mul!(view(output, :), solver.M.T_interp_F, wksp.lhs_F )

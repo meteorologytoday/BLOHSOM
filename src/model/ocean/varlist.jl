@@ -14,8 +14,8 @@ function getCompleteVariableList(m::Model)
             "X_ML"            => ( view(d[:X_ML].odata, :, :, :, 1),          ("Nx", "Ny", "NX") ),
             "h_ML"            => ( d[:h_ML].odata,                            ("Nx", "Ny") ),
             "Phi"             => ( d[:Φ].odata,                               ("Nx", "Ny",) ),
-            "u_total"         => ( d[:u_total_c].odata,                       ("Nx", "Ny",   "Nz_c") ),
-            "v_total"         => ( d[:v_total_c].odata,                       ("Nx", "Nyp1", "Nz_c") ),
+            "u_c"         => ( d[:u_c].odata,                       ("Nx", "Ny",   "Nz_c") ),
+            "v_c"         => ( d[:v_c].odata,                       ("Nx", "Nyp1", "Nz_c") ),
             "b_ML"            => ( d[:b_ML].odata,                            ("Nx", "Ny") ),
             "b"               => ( d[:b].odata,                               ("Nx", "Ny", "Nz_f") ),
 #            "B"               => ( d[:B].odata,                               ("Nx", "Ny", "Nz_f") ),
@@ -23,7 +23,7 @@ function getCompleteVariableList(m::Model)
 #            "dBdy"            => ( d[:∂B∂y].odata,                            ("Nx", "Nyp1", "Nz_c") ),
             #"u_U"             => ( d[:u_U].odata,                             ("Nx", "Ny",   "Nz_f") ),
             #"v_V"             => ( d[:v_V].odata,                             ("Nx", "Nyp1", "Nz_f") ),
-#            "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
+            "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
         )
 end
 

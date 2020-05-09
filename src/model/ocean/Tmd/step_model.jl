@@ -12,10 +12,6 @@ function determineVelocity!(
     v_V = getSpace!(wksp, :V)
 
 
-    fr.u_T .= 1.0
-    fr.v_T .= 0.0
-
-
     u_U .= fr.u_U
     v_V .= fr.v_V
 #    println("Any NaN u_T?", any(isnan.(fr.u_T)))
@@ -104,7 +100,7 @@ function advectTracer!(
     calDiffAdv_QUICKEST_SpeedUp!(m, Δt)
     
 
-#=    
+#=
     # deal with top layer
     w_sfc    = view(fr.w_W,  1, :, :)
     Δz_T_sfc = ev.z_bnd[1] - ev.z_bnd[2]#view(co.Δz_T, 1, :, :)
@@ -115,7 +111,6 @@ function advectTracer!(
     end
     #st.Xsfcsponge += co.XFLUX_top * Δt 
 =#
-
     @. st.X  += Δt * co.XFLUX_CONV
     @. st.ΔX += Δt * st.dΔXdt
 

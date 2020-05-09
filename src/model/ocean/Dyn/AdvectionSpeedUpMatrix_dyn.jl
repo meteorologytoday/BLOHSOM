@@ -355,15 +355,15 @@ mutable struct DynamicAdvSpeedUpMatrix
         
         # imagine term fv act on U grid
         # filter_U and filter_V have already been applied in U_f_U and V_f_V
-        U_f_V = filter_U * U_f_U * U_interp_V
-        V_f_U = filter_V * V_f_V * V_interp_U
+#        U_f_V = filter_U * U_f_U * U_interp_V
+#        V_f_U = filter_V * V_f_V * V_interp_U
  
 #        U_f_V = filter_U * U_interp_V * V_f_V
 #        V_f_U = filter_V * V_interp_U * U_f_U
  
 
-#        U_f_V = filter_U * U_interp_T * T_f_T * T_interp_V
-#        V_f_U = filter_V * V_interp_T * T_f_T * T_interp_U
+        U_f_V = filter_U * U_interp_T * T_f_T * T_interp_V
+        V_f_U = filter_V * V_interp_T * T_f_T * T_interp_U
 
        
 

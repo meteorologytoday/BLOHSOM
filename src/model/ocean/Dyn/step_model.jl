@@ -102,10 +102,10 @@ function doHDiffusionBarotropic!(
     r = 1.0 / (ϵΔtp1+1.0) - 1.0
 
     mul2!(wksp_sV, core.c_ops.coastmask_V, wksp_sV_sol)
-    @. wksp_sV_sol = wksp_sV_sol + r * wksp_sV *2 
+    @. wksp_sV_sol = wksp_sV_sol + r * wksp_sV 
 
     mul2!(wksp_sU, core.c_ops.coastmask_U, wksp_sU_sol)
-    @. wksp_sU_sol = wksp_sU_sol + r * wksp_sU*2
+    @. wksp_sU_sol = wksp_sU_sol + r * wksp_sU
 
     state.U .= wksp_sU_sol
     state.V .= wksp_sV_sol
@@ -209,10 +209,10 @@ function calAuxV!(
 #    println("size of V_f_U: ", size(c_ops.V_f_U))
 #    println("sizeof u_total: ", size(state.u_total))
 
-    mul3!(fu, c_ops.V_f_U, state.u_total)   # fu on V grid
-    mul3!(fv, c_ops.U_f_V, state.v_total)   # fv on U grid
-#    mul3!(fu, c_ops.V_f_U, state.u)   # fu on V grid
-#    mul3!(fv, c_ops.U_f_V, state.v)   # fv on U grid
+#    mul3!(fu, c_ops.V_f_U, state.u_total)   # fu on V grid
+#    mul3!(fv, c_ops.U_f_V, state.v_total)   # fv on U grid
+    mul3!(fu, c_ops.V_f_U, state.u)   # fu on V grid
+    mul3!(fv, c_ops.U_f_V, state.v)   # fv on U grid
 
     #println("fu: ", fu[30, 29, 1])   
 
@@ -381,9 +381,9 @@ function solveΦ!(
     state  = model.state
     solver = core.Φ_solver
     
-    #solvePhi!(core.Φ_solver, core.Φ_aux, state.Φ)
+    solvePhi!(core.Φ_solver, core.Φ_aux, state.Φ)
    
-    #return
+    return
 
     lhs = getSpace!(core.wksp, :sT)
     rhs = getSpace!(core.wksp, :sT)

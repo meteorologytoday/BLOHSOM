@@ -39,7 +39,7 @@ if !isdefined(Main, :REPL)
 
 else
 
-    run_days = 1
+    run_days = 100
     output_file = "output.nc"
 
 end
@@ -50,6 +50,7 @@ z_bnd = collect(Float64, range(0, -4000, length=2))
 
 println("Create Gridinfo");
 hrgrid_file = "/seley/tienyiah/CESM_domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc"
+hrgrid_file = "/seley/tienyiah/CESM_domains/test_domains/domain.ocn.gx3v7.120323.nc"
 
 gf_ref = GridFiles.CurvilinearSphericalGridFile(
         hrgrid_file;
@@ -59,7 +60,7 @@ gf_ref = GridFiles.CurvilinearSphericalGridFile(
 
 gf = gf_ref
 
-gf.mask .= 1.0 .- gf_ref.mask
+#gf.mask .= 1.0 .- gf_ref.mask
 #=
 Ly = 100e3 * 150.0
 gf = GridFiles.CylindricalGridFile(;
@@ -147,7 +148,8 @@ model = Dyn.DynModel(
     Kh_barotropic       = 10000.0,
     Kh_baroclinic       = 1000.0,
     Kv_baroclinic       = 10000.0,
-    τ_barotropic        = 86400*120.0,
+    τ_barotropic_bottomfric        = 86400*120.0,
+    τ_barotropic_coastfric        = 86400*120.0,
     z_bnd               = z_bnd,
     mask                = gf.mask,
     mode = :PROG
@@ -263,7 +265,7 @@ end
 #a = 0.1 * exp.(- (gi.c_y.^2 + gi.c_x.^2) / (σ^2.0) / 2) .* sin.(gi.c_lon*3)
 #b = 0.1 * exp.(- (gi.c_y.^2 + gi.c_x.^2) / (σ^2.0) / 2) .* cos.(gi.c_lon*3)
 a=b=0
-run_days=1
+run_days=100
 
 #model.state.v_c[:, 2:end, 1] .= 1.0 * exp.(- (gi.c_y.^2 + (gi.R * (gi.c_lon .- π)).^2) / (σ^2.0) / 2) .* cos.(gi.c_lon*3)
 #model.state.v_c[:, 2:end, 1] .= 1.0 * exp.(- ((gi.R * (gi.c_lon .- π)).^2) / (σ^2.0) / 2)
