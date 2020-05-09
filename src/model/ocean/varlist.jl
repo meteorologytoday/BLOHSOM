@@ -23,7 +23,7 @@ function getCompleteVariableList(m::Model)
 #            "dBdy"            => ( d[:∂B∂y].odata,                            ("Nx", "Nyp1", "Nz_c") ),
             #"u_U"             => ( d[:u_U].odata,                             ("Nx", "Ny",   "Nz_f") ),
             #"v_V"             => ( d[:v_V].odata,                             ("Nx", "Nyp1", "Nz_f") ),
-            "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
+#            "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
         )
 end
 

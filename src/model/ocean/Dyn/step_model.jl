@@ -98,6 +98,7 @@ function doHDiffusionBarotropic!(
 
     # ===== [ BEGIN coastal friction on barotropic mode ] =====
 
+    #=
     ϵΔtp1 = 1 + env.Δt / env.τ_barotropic_coastfric
     r = 1.0 / (ϵΔtp1+1.0) - 1.0
 
@@ -106,6 +107,8 @@ function doHDiffusionBarotropic!(
 
     mul2!(wksp_sU, core.c_ops.coastmask_U, wksp_sU_sol)
     @. wksp_sU_sol = wksp_sU_sol + r * wksp_sU
+
+    =#
 
     state.U .= wksp_sU_sol
     state.V .= wksp_sV_sol

@@ -165,6 +165,7 @@ mask3 = repeat(reshape(gf.mask, 1, gf.Nx, gf.Ny), outer=(length(z_bnd_f)-1, 1, 1
 
 basic_T   = z_mid * 0
 anomaly_T = z_mid * 0
+anomaly_T2 = z_mid * 0
     
 @. basic_T = 10 #+ 15 * exp(z_mid / σz)
 
@@ -175,7 +176,12 @@ warmpool_bnd_z = - 200.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .-
 warmpool_bnd_z = repeat(reshape(warmpool_bnd_z, 1, size(warmpool_bnd_z)...), outer=(size(z_mid)[1], 1, 1))
 anomaly_T[z_mid .> warmpool_bnd_z] .= 20.0
 
-total_T = basic_T  + anomaly_T
+warmpool_bnd_z = - 200.0 * exp.(- ( ((gi.c_lat.-π/2) * gi.R ).^2 + (gi.R * 0 * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
+warmpool_bnd_z = repeat(reshape(warmpool_bnd_z, 1, size(warmpool_bnd_z)...), outer=(size(z_mid)[1], 1, 1))
+anomaly_T2[z_mid .> warmpool_bnd_z] .= 20.0
+
+
+total_T = basic_T  + anomaly_T + anomaly_T2
 total_T[1:4, :, :] .= 20.0
 
 h_ML = gf.mask * 0 .+ 10.0
