@@ -2,7 +2,7 @@ include("../../share/constants.jl")
 include("../../share/PolelikeCoordinate.jl")
 include("MatrixOperators.jl")
 include("Dyn/AdvectionSpeedUpMatrix_dyn.jl")
-include("Dyn/PhiSolver.jl")
+include("Dyn/PhiSolver_F.jl")
 
 H  = 1000.0;
 Δt = 86400.0;
@@ -40,7 +40,7 @@ println("Making ΦSolver")
 
 #F = cM.tool_mtx.MoLap
 
-F = lu(cM.eT_Lap_eT)
+G = lu(cM.eF_Lap_eF)
 
 
 f         =   cos.(π/gi.Ly * gi.c_y) .* sin.(2*gi.c_lon);
@@ -50,20 +50,24 @@ Lapf_true =   - f .* ( (2/ gi.R)^2 + (π/gi.Ly)^2 );
 
 f = f[:]
 
-dfdx = cM.M.U_∂x_T * f
-dfdy = cM.M.V_∂y_T * f
+f_F = cM.M.F_interp_T * f
 
-Lapf = cM.T_Lap_T * f
+#dfdx = cM.M.U_∂x_T * f
+#dfdy = cM.M.V_∂y_T * f
 
-solve_Lapf = cM.T_send_eT * (F \ (cM.eT_send_T * Lapf))
+Lapf = cM.F_Lap_F * f_F
+
+solve_Lapf = cM.F_send_eF * (G \ (cM.eF_send_F * Lapf))
 
 reshape2 = (m,) -> reshape(m, gi.Nx, :)
 
 f    = reshape2(f)
+f_F  = reshape2(f_F)
 Lapf = reshape2(Lapf)
 solve_Lapf = reshape2(solve_Lapf)
-dfdx = reshape2(dfdx)
-dfdy = reshape2(dfdy)
+#dfdx = reshape2(dfdx)
+#dfdy = reshape2(dfdy)
+
 
 using NCDatasets
 Dataset("output_phisolver.nc", "c") do ds
@@ -74,12 +78,13 @@ Dataset("output_phisolver.nc", "c") do ds
 
     for (varname, vardata, vardim, attrib) in [
         ("f",  f, ("Nx", "Ny"), Dict()),
-        ("dfdx",  dfdx, ("Nx", "Ny"), Dict()),
-        ("dfdy",  dfdy, ("Nx", "Nyp1"), Dict()),
-        ("Lapf",  Lapf, ("Nx", "Ny"), Dict()),
-        ("solve_Lapf",  solve_Lapf, ("Nx", "Ny"), Dict()),
-        ("dfdx_true",  dfdx_true, ("Nx", "Ny"), Dict()),
-        ("dfdy_true",  dfdy_true, ("Nx", "Ny"), Dict()),
+        ("f_F",  f_F, ("Nx", "Nyp1"), Dict()),
+#        ("dfdx",  dfdx, ("Nx", "Ny"), Dict()),
+#        ("dfdy",  dfdy, ("Nx", "Nyp1"), Dict()),
+        ("Lapf",  Lapf, ("Nx", "Nyp1"), Dict()),
+        ("solve_Lapf",  solve_Lapf, ("Nx", "Nyp1"), Dict()),
+#        ("dfdx_true",  dfdx_true, ("Nx", "Ny"), Dict()),
+#        ("dfdy_true",  dfdy_true, ("Nx", "Ny"), Dict()),
         ("Lapf_true",  Lapf_true, ("Nx", "Ny"), Dict()),
 
     ]

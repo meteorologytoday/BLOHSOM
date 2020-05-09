@@ -24,6 +24,10 @@ mutable struct DynEnv
     Δt :: Float64
     Kh_barotropic :: Float64
     Kh_baroclinic :: Float64
+    Kv_baroclinic :: Float64
+
+    τ_barotropic_bottomfric :: Float64
+    τ_barotropic_coastfric :: Float64
 
     Nx :: Int64
     Ny :: Int64
@@ -49,6 +53,9 @@ mutable struct DynEnv
         Δt                  :: Float64,
         Kh_barotropic       :: Float64,
         Kh_baroclinic       :: Float64,
+        Kv_baroclinic       :: Float64,
+        τ_barotropic_bottomfric :: Float64,
+        τ_barotropic_coastfric  :: Float64,
         Nx                  :: Int64,
         Ny                  :: Int64,
         z_bnd               :: AbstractArray{Float64, 1},
@@ -94,6 +101,9 @@ mutable struct DynEnv
             Δt,
             Kh_barotropic,
             Kh_baroclinic,
+            Kv_baroclinic,
+            τ_barotropic_bottomfric,
+            τ_barotropic_coastfric,
             Nx, Ny, Nz, 
             z_bnd,
             H,

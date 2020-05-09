@@ -120,7 +120,7 @@ function genEmptyGrid(
     )[grid]
 
     if length(dim) == 3 && wksp.shape == :zxy
-        circshift!(dim, 1)
+        dim = circshift(dim, (1,))
     end
 
     return zeros(dtype, dim...)

@@ -85,8 +85,8 @@ gf.mask                       .= 1
 gf.mask[:, 1:ycutoff]         .= 0 
 gf.mask[:, end-ycutoff+1:end] .= 0 
 
-gf.mask[1:xcutoff, :]         .= 0 
-gf.mask[end-xcutoff+1:end, :] .= 0 
+#gf.mask[1:xcutoff, :]         .= 0 
+#gf.mask[end-xcutoff+1:end, :] .= 0 
 
 
 

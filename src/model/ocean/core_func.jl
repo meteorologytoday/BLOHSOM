@@ -158,7 +158,7 @@ function regBindingGroups!(model::Model)
         :TMD2DYN     => (:B_c,),
         :TMDBND      => (:X, :X_ML, :h_ML, :FLDO),
         :END_DYN2MAS => (:Φ, :∂B∂x, :∂B∂y),
-        :END_TMD2MAS => (:X, :X_ML, :h_ML, :FLDO, :b, :b_ML, :B, :u_U, :v_V, :w_W),
+        :END_TMD2MAS => (:X, :X_ML, :h_ML, :FLDO, :b, :b_ML, :B, :w_W),
         :FORCING_MAS2DYN => (),
         :FORCING_MAS2TMD => (:SWFLX, :NSWFLX),
         :TEST_MAS2TMD => (:X, :X_ML),
@@ -201,9 +201,6 @@ function regSharedData!(model::Model)
         (:b   ,  :fT, :zxy, Float64),
         (:B   ,  :fT, :zxy, Float64),
         (:FLDO,  :sT, :xy,    Int64),
-        (:u_U,   :fU, :zxy, Float64),
-        (:v_V,   :fV, :zxy, Float64),
-        (:w_W,   :fW, :zxy, Float64),
         
         # These are used by dyn_core 
         (:u_total_c, :cU, :xyz, Float64),
@@ -225,6 +222,7 @@ function regSharedData!(model::Model)
         (:T_CLIM,  :sT, :xy,  Float64),
         (:S_CLIM,  :sT, :xy,  Float64),
         (:MLT,     :sT, :xy,  Float64),
+        (:w_W,     :fW, :xyz,  Float64),
     ) 
 
 

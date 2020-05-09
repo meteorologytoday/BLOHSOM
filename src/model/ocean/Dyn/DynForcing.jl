@@ -22,7 +22,7 @@ mutable struct DynForcing
         τy_raw = zeros(Float64, Nx, Ny)
 
         τx = zeros(Float64, Nx, Ny)
-        τy = zeros(Float64, Nx, Ny)
+        τy = zeros(Float64, Nx, Ny+1)
 
 
 

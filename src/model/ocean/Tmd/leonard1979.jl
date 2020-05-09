@@ -58,6 +58,7 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         Kh = ev.Kh_X[x]
         Kv = ev.Kv_X[x]
 
+        #println("Kh: ", Kh, "; Kv: ", Kv)
         # x direction
         calFluxDensity_abstract!(;
             X_T                 = X,
@@ -137,9 +138,29 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         )
  
         mul_autoflat!(XFLUX_CONV_h, ASUM.T_DIVx_U, XFLUX_DEN_x)
-        mul_autoflat!(tmp1,   ASUM.T_DIVy_V, XFLUX_DEN_y)
-        mul_autoflat!(tmp2,   ASUM.T_DIVz_W, XFLUX_DEN_z)
+        mul_autoflat!(tmp1,         ASUM.T_DIVy_V, XFLUX_DEN_y)
+        mul_autoflat!(tmp2,         ASUM.T_DIVz_W, XFLUX_DEN_z)
 
+        #XFLUX_DEN_z[1,:,:] .= 0.0
+        #XFLUX_DEN_z[end,:,:] .= 0.0
+
+        #=
+        replace!(XFLUX_DEN_z, NaN=>0)
+        println("Maximum of w_W ", maximum(abs.(fr.w_W)))
+        println("Maximum of XFLUX_z: ", maximum(abs.(XFLUX_DEN_z)))
+        println("sum of XFLUX x div: ", sum(co.ASUM.T_Δvol_T * XFLUX_CONV_h[:]))
+        println("sum of XFLUX y div: ", sum(co.ASUM.T_Δvol_T * tmp1[:]))
+        println("sum of XFLUX z div: ", sum(co.ASUM.T_Δvol_T * tmp2[:]))
+
+        #XFLUX_DEN_z[:] = ASUM.filter_W * XFLUX_DEN_z[:]
+        if any(isnan.(XFLUX_DEN_z))
+            throw(ErrorException("XFLUX_DEN_Z is nan"))
+            
+        end
+        if any(XFLUX_DEN_z[1,:,:] .!= 0) || any(XFLUX_DEN_z[end,:,:] .!= 0)
+            throw(ErrorException("XFLUX_DEN_Z != 0"))
+        end
+        =#
 
         @. XFLUX_CONV_h = -1.0 * (XFLUX_CONV_h + tmp1)
         @. XFLUX_CONV = XFLUX_CONV_h - tmp2

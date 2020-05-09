@@ -25,6 +25,12 @@ mutable struct DynamicAdvSpeedUpMatrix
     filter_V       :: AbstractArray{Float64, 2}
     filter_F       :: AbstractArray{Float64, 2}
     borderfilter_T :: AbstractArray{Float64, 2}
+    borderfilter_F :: AbstractArray{Float64, 2}
+
+    # These are the grid point that is adjacent to a masked-T grid
+    # This is used to damp the velocity parallel to the coastline
+    coastmask_U    :: AbstractArray{Float64, 2}
+    coastmask_V    :: AbstractArray{Float64, 2}
 
     U_interp_V :: AbstractArray{Float64, 2}  # interpolation of V grid onto U grid
     V_interp_U :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
@@ -34,6 +40,8 @@ mutable struct DynamicAdvSpeedUpMatrix
     U_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
     V_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
 
+    F_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
+    T_interp_F :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
 
     U_∂x_T   :: AbstractArray{Float64, 2}   # ∇b 
     V_∂y_T   :: AbstractArray{Float64, 2}   
@@ -59,6 +67,7 @@ mutable struct DynamicAdvSpeedUpMatrix
     T_Lap_T  :: AbstractArray{Float64, 2}
     U_Lap_U  :: AbstractArray{Float64, 2}
     V_Lap_V  :: AbstractArray{Float64, 2}
+    F_Lap_F  :: AbstractArray{Float64, 2}
  
 
     T_f_T      :: AbstractArray{Float64, 2}   # used to get fu, fv on T grid
@@ -125,6 +134,35 @@ mutable struct DynamicAdvSpeedUpMatrix
             .* (op.T_W_T * mask3_flat)
         ))
 
+        borderfilter_F = spdiagm( 0 => ( 
+               (op.F_SW_T * mask3_flat)
+            .* (op.F_SE_T * mask3_flat)
+            .* (op.F_NW_T * mask3_flat)
+            .* (op.F_NE_T * mask3_flat)
+        ))
+
+        coastmask_U = spdiagm( 0 => (
+            1.0 .- 
+               (op.U_SW_V * V_mask )
+            .* (op.U_SE_V * V_mask )
+            .* (op.U_NW_V * V_mask )
+            .* (op.U_NE_V * V_mask )
+        ))
+
+        coastmask_V = spdiagm( 0 => (
+            1.0 .- 
+               (op.V_SW_U * U_mask )
+            .* (op.V_SE_U * U_mask )
+            .* (op.V_NW_U * U_mask )
+            .* (op.V_NE_U * U_mask)
+        ))
+
+
+
+        if borderfilter_F != filter_F
+            throw(ErrorException("These two should be the same"))
+        end
+
         function selfDivision(m, ones_vec)
             local wgts = m * ones_vec
             m_t = transpose(m) |> sparse
@@ -144,11 +182,7 @@ mutable struct DynamicAdvSpeedUpMatrix
 
             # Hack into sparse matrix to speed up. Speed up like 10 times at least
             for (i, wgt) in enumerate(wgts)
-                if wgt == 1
-                    _beg = m_t.colptr[i]
-                    _end = m_t.colptr[i+1]-1
-                    m_t.nzval[_beg:_end] .= 0
-                elseif wgt > 1
+                if wgt != 0
                     _beg = m_t.colptr[i]
                     _end = m_t.colptr[i+1]-1
                     m_t.nzval[_beg:_end] ./= wgt
@@ -162,6 +196,7 @@ mutable struct DynamicAdvSpeedUpMatrix
         ones_U = ones(Float64, op.U_pts)
         ones_V = ones(Float64, op.V_pts)
         ones_T = ones(Float64, op.T_pts)
+        ones_F = ones(Float64, op.F_pts)
 
         U_interp_V = (op.U_SW_V + op.U_SE_V + op.U_NW_V + op.U_NE_V) * filter_V     
         U_interp_V = selfDivision(U_interp_V, ones_V)
@@ -181,6 +216,12 @@ mutable struct DynamicAdvSpeedUpMatrix
         T_interp_V = (op.T_S_V + op.T_N_V) * filter_V
         T_interp_V = selfDivision(T_interp_V, ones_V)
  
+        F_interp_T = (op.F_SW_T + op.F_SE_T + op.F_NW_T + op.F_NE_T) * filter_T
+        F_interp_T = selfDivision(F_interp_T, ones_T)
+ 
+        T_interp_F = (op.T_SW_F + op.T_SE_F + op.T_NW_F + op.T_NE_F) * filter_F
+        T_interp_F = selfDivision(T_interp_F, ones_F)
+ 
         #println("if_mask_north_V", size(if_mask_north_V))
         #println("filter_V", size(filter_V))
 
@@ -193,7 +234,9 @@ mutable struct DynamicAdvSpeedUpMatrix
         Δy_V = hcat(gi.dy_s, gi.dy_n[:, end])
 
         V_Δx_V    = (Δx_V         |> cvt23_diagm)
+        V_Δy_V    = (Δy_V         |> cvt23_diagm)
         U_Δy_U    = (Δy_U         |> cvt23_diagm)
+        U_Δx_U    = (Δx_U         |> cvt23_diagm)
 
         U_invΔx_U = (Δx_U.^(-1)   |> cvt23_diagm)
         U_invΔy_U = (Δy_U.^(-1)   |> cvt23_diagm)
@@ -235,6 +278,7 @@ mutable struct DynamicAdvSpeedUpMatrix
        
         invΔx_F = Δx_F.^(-1)
         invΔy_F = Δy_F.^(-1)
+        invΔσ_F = invΔx_F .* invΔy_F
 
         if any(isnan.(invΔx_F)) || any(isnan.(invΔy_F))
             throw(ErrorException("Contains NaN. Maybe Δx_F or Δy_F contains zero length."))
@@ -245,6 +289,7 @@ mutable struct DynamicAdvSpeedUpMatrix
 
         F_invΔx_F = invΔx_F |> cvt23_diagm
         F_invΔy_F = invΔy_F |> cvt23_diagm
+        F_invΔσ_F = invΔσ_F |> cvt23_diagm
 
         # ===== [ END length on F_grid ] =====
 
@@ -255,8 +300,8 @@ mutable struct DynamicAdvSpeedUpMatrix
         V_∂y_T = filter_V * V_invΔy_V * (op.V_S_T - op.V_N_T) ; dropzeros!(V_∂y_T);
 
         # notice here no filter is needed. No extrapolated information.
-        T_∂x_U = T_invΔx_T * (op.T_W_U - op.T_E_U) ; dropzeros!(T_∂x_U);
-        T_∂y_V = T_invΔy_T * (op.T_S_V - op.T_N_V) ; dropzeros!(T_∂y_V);
+        T_∂x_U = filter_T * T_invΔx_T * (op.T_W_U - op.T_E_U) ; dropzeros!(T_∂x_U);
+        T_∂y_V = filter_T * T_invΔy_T * (op.T_S_V - op.T_N_V) ; dropzeros!(T_∂y_V);
 
         T_∂x_T = T_∂x_U * U_interp_T ; dropzeros!(T_∂x_T);
         T_∂y_T = T_∂y_V * V_interp_T ; dropzeros!(T_∂y_T);
@@ -270,6 +315,10 @@ mutable struct DynamicAdvSpeedUpMatrix
         F_∂y_U = filter_F * F_invΔy_F * (op.F_S_U - op.F_N_U) ; dropzeros!(F_∂y_U); 
         F_∂x_V = filter_F * F_invΔx_F * (op.F_W_V - op.F_E_V) ; dropzeros!(F_∂x_V); 
 
+        U_∂y_F = U_invΔy_U * (op.U_S_F - op.U_N_F) ; dropzeros!(U_∂y_F); 
+        V_∂x_F = V_invΔx_V * (op.V_W_F - op.V_E_F) ; dropzeros!(V_∂x_F); 
+
+
         T_DIVx_U = filter_T * T_invΔσ_T * ( op.T_W_U - op.T_E_U  ) * U_Δy_U  ; dropzeros!(T_DIVx_U);
         T_DIVy_V = filter_T * T_invΔσ_T * ( op.T_S_V - op.T_N_V  ) * V_Δx_V  ; dropzeros!(T_DIVy_V);
         
@@ -278,10 +327,16 @@ mutable struct DynamicAdvSpeedUpMatrix
 
         V_DIVx_F = filter_V * V_invΔσ_V * ( op.V_W_F - op.V_E_F  ) * F_Δy_F  ; dropzeros!(V_DIVx_F);
         U_DIVy_F = filter_U * U_invΔσ_U * ( op.U_S_F - op.U_N_F  ) * F_Δx_F  ; dropzeros!(U_DIVy_F);
+        
+        F_DIVy_U = F_invΔσ_F * ( op.F_S_U - op.F_N_U  ) * U_Δx_U  ; dropzeros!(F_DIVy_U);
+        F_DIVx_V = F_invΔσ_F * ( op.F_W_V - op.F_E_V  ) * V_Δy_V  ; dropzeros!(F_DIVx_V);
 
         T_Lap_T   = T_DIVx_U * U_∂x_T + T_DIVy_V * V_∂y_T ; dropzeros!(T_Lap_T);
         U_Lap_U   = filter_U * ( U_DIVx_T * T_∂x_U + U_DIVy_F * F_∂y_U ) ; dropzeros!(U_Lap_U);
         V_Lap_V   = filter_V * ( V_DIVx_F * F_∂x_V + V_DIVy_T * T_∂y_V ) ; dropzeros!(V_Lap_V);
+
+        
+        F_Lap_F   = filter_F * ( F_DIVx_V * V_∂x_F + F_DIVy_U * U_∂y_F ) ; dropzeros!(F_Lap_F);
 
         # Just for test. This is not real divergence and P grid is needed
 #        U_Lap_U = filter_U * ( U_∂x_T * T_∂x_U + ( U_invΔy_U * (op.U_S_U - op.U_I_U) - U_invΔy_U * (op.U_I_U - op.U_N_U) ) ) ; dropzeros!(U_Lap_U);
@@ -293,22 +348,22 @@ mutable struct DynamicAdvSpeedUpMatrix
 
         # Dangerous. Coriolis force can result in energy leak.
         #Need to deal with it carefully
-#        U_f_U = filter_U * spdiagm( 0 => view(U_interp_T * view(f, :), :) )
-#        V_f_V = filter_V * spdiagm( 0 => view(V_interp_T * view(f, :), :) )
+        U_f_U = filter_U * spdiagm( 0 => view(U_interp_T * view(f, :), :) )
+        V_f_V = filter_V * spdiagm( 0 => view(V_interp_T * view(f, :), :) )
 
         T_f_T = filter_T * spdiagm( 0 => view(f, :) )
         
         # imagine term fv act on U grid
         # filter_U and filter_V have already been applied in U_f_U and V_f_V
-#        U_f_V = filter_U * U_f_U * U_interp_V
-#        V_f_U = filter_V * V_f_V * V_interp_U
+        U_f_V = filter_U * U_f_U * U_interp_V
+        V_f_U = filter_V * V_f_V * V_interp_U
  
 #        U_f_V = filter_U * U_interp_V * V_f_V
 #        V_f_U = filter_V * V_interp_U * U_f_U
  
 
-        U_f_V = filter_U * U_interp_T * T_f_T * T_interp_V
-        V_f_U = filter_V * V_interp_T * T_f_T * T_interp_U
+#        U_f_V = filter_U * U_interp_T * T_f_T * T_interp_V
+#        V_f_U = filter_V * V_interp_T * T_f_T * T_interp_U
 
        
 
@@ -328,10 +383,14 @@ mutable struct DynamicAdvSpeedUpMatrix
 
             filter_T, filter_U, filter_V, filter_F,
             borderfilter_T,
+            borderfilter_F,
+            coastmask_U,
+            coastmask_V,
 
             U_interp_V, V_interp_U,
             T_interp_U, T_interp_V,
             U_interp_T, V_interp_T,
+            F_interp_T, T_interp_F,
 
             U_∂x_T, V_∂y_T,
             T_∂x_U, T_∂y_V,
@@ -340,10 +399,12 @@ mutable struct DynamicAdvSpeedUpMatrix
             U_∂x_U, U_∂y_U,
             V_∂x_V, V_∂y_V,
             T_DIVx_U, T_DIVy_V,
-            T_Lap_T, U_Lap_U, V_Lap_V,
+            T_Lap_T, U_Lap_U, V_Lap_V, F_Lap_F,
 
             T_f_T,
             U_f_V, V_f_U,
+
+
         )
     end
 end

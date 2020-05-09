@@ -2,7 +2,7 @@
 if ! isdefined(Main, :GridFiles)
     include("GridFiles.jl")
 end
-
+using .GridFiles
 
 module PolelikeCoordinate
 

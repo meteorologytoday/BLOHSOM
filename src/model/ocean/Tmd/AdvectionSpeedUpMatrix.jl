@@ -17,7 +17,6 @@ mutable struct AdvectionSpeedUpMatrix
     T_∂y_V      :: AbstractArray{Float64, 2}
     T_∂z_W      :: AbstractArray{Float64, 2}
 
-
     U_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
     V_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
     W_interp_T :: AbstractArray{Float64, 2}  # interpolation of U grid onto V grid
@@ -35,17 +34,24 @@ mutable struct AdvectionSpeedUpMatrix
     Δy_V :: AbstractArray{Float64, 3}
     Δz_W :: AbstractArray{Float64, 3}
 
+    T_invΔz_T
 
     function AdvectionSpeedUpMatrix(;
         gi             :: PolelikeCoordinate.GridInfo,
         Nz             :: Int64,
         Nz_av          :: AbstractArray{Int64, 2},
         mask3          :: AbstractArray{Float64, 3},
-        noflux_x_mask3 :: AbstractArray{Float64, 3},
-        noflux_y_mask3 :: AbstractArray{Float64, 3},
         Δz_T           :: AbstractArray{Float64, 3},      # thickness of T grid
         Δz_W           :: AbstractArray{Float64, 3},      # thickness of W grid
     )
+
+        if size(Δz_T) != (Nz, gi.Nx, gi.Ny) 
+            throw(ErrorException("Δz_T is wrong size"))
+        end
+
+        if size(Δz_W) != (Nz+1, gi.Nx, gi.Ny) 
+            throw(ErrorException("Δz_W is wrong size"))
+        end
 
 
         println("TODO: there should be no horizontal flux in the last z grid (bottom)")
@@ -173,8 +179,8 @@ mutable struct AdvectionSpeedUpMatrix
         W_∂z_T = filter_W * W_invΔz_W * (op.W_DN_T - op.W_UP_T)                ; dropzeros!(W_∂z_T);
 
         T_∂x_U  = filter_T * T_invΔx_T * ( op.T_W_U - op.T_E_U )               ; dropzeros!(T_∂x_U);
-        T_∂y_V  = filter_T * T_invΔy_T * ( op.T_S_V - op.T_N_V )               ; dropzeros!(T_∂x_U);
-        T_∂z_W  = filter_T * T_invΔz_T * ( op.T_DN_W - op.T_UP_W )               ; dropzeros!(T_∂x_U);
+        T_∂y_V  = filter_T * T_invΔy_T * ( op.T_S_V - op.T_N_V )               ; dropzeros!(T_∂y_V);
+        T_∂z_W  = filter_T * T_invΔz_T * ( op.T_DN_W - op.T_UP_W )             ; dropzeros!(T_∂z_W);
 
 
 
@@ -182,11 +188,7 @@ mutable struct AdvectionSpeedUpMatrix
             local wgts = m * ones_vec
             m_t = transpose(m) |> sparse
             for (i, wgt) in enumerate(wgts)
-                if wgt == 1
-                    _beg = m_t.colptr[i]
-                    _end = m_t.colptr[i+1]-1
-                    m_t.nzval[_beg:_end] .= 0
-                elseif wgt > 1
+                if wgt != 0
                     _beg = m_t.colptr[i]
                     _end = m_t.colptr[i+1]-1
                     m_t.nzval[_beg:_end] ./= wgt
@@ -239,7 +241,7 @@ mutable struct AdvectionSpeedUpMatrix
             Δy_V,
             Δz_W,
 
-
+            T_invΔz_T,
         )
     end
 end

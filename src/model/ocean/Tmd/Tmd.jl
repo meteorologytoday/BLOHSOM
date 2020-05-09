@@ -89,11 +89,13 @@ module Tmd
         reset!(co.wksp)
 
         
+        #determineVelocity!(m)
         if co.current_substep == 1
             determineVelocity!(m)
         end
 
-
+        #println("sum of nswflx: ", sum(fr.nswflx))
+        println("co.current_substep: ", co.current_substep)
         advectTracer!(m)
         doMixedLayerDynamics!(m)
 

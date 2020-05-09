@@ -8,6 +8,9 @@ mutable struct TmdForcing
     TSAS_wr   :: AbstractArray{Float64, 2}
     SSAS_wr   :: AbstractArray{Float64, 2}
 
+    u_T    :: AbstractArray{Float64, 3}
+    v_T    :: AbstractArray{Float64, 3}
+
     u_U    :: AbstractArray{Float64, 3}
     v_V    :: AbstractArray{Float64, 3}
     w_W    :: AbstractArray{Float64, 3}
@@ -47,7 +50,9 @@ mutable struct TmdForcing
         TSAS_wr = view(XSAS_wr, :, :, 1)
         SSAS_wr = view(XSAS_wr, :, :, 2)
  
-
+        u_T = zeros(Float64, Nz, Nx, Ny)
+        v_T = zeros(Float64, Nz, Nx, Ny)
+ 
         u_U = zeros(Float64, Nz, Nx, Ny)
         v_V = zeros(Float64, Nz, Nx, Ny+1)
         w_W = zeros(Float64, Nz+1, Nx, Ny)
@@ -78,6 +83,9 @@ mutable struct TmdForcing
             XSAS_wr,
             TSAS_wr,
             SSAS_wr,
+
+            u_T,
+            v_T,
 
             u_U,
             v_V,

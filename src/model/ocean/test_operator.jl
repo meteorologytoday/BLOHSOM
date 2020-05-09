@@ -51,3 +51,7 @@ f_T = cos.(gi.c_y / gi.Ly * 2*π);
 f_V = reshape( M.V_∂y_T * f_T[:], gi.Nx, gi.Ny+1 )
 
 
+f_T = reshape(collect(1:length(gf.mask)), size(gf.mask)...)
+
+
+

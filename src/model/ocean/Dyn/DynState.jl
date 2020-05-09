@@ -26,20 +26,20 @@ mutable struct DynState
         Nz = env.Nz
 
         u_total =  zeros(Float64, Nx, Ny, Nz)
-        v_total =  zeros(Float64, Nx, Ny, Nz)
+        v_total =  zeros(Float64, Nx, Ny+1, Nz)
 
         Φ =  zeros(Float64, Nx, Ny)
         
         U =  zeros(Float64, Nx, Ny  )
-        V =  zeros(Float64, Nx, Ny)
+        V =  zeros(Float64, Nx, Ny+1)
 
 
         u =  zeros(Float64, Nx, Ny, Nz)
-        v =  zeros(Float64, Nx, Ny, Nz)
+        v =  zeros(Float64, Nx, Ny+1, Nz)
         b =  zeros(Float64, Nx, Ny, Nz)
 
         G_u = zeros(Float64, Nx, Ny, Nz, 3)
-        G_v = zeros(Float64, Nx, Ny, Nz, 3)
+        G_v = zeros(Float64, Nx, Ny+1, Nz, 3)
 
         return new(
             u_total, v_total,

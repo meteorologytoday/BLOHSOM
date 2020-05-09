@@ -37,6 +37,8 @@ mutable struct TmdCore    # Adam Bashford
     XFLUX_DEN_x  :: AbstractArray{Float64, 4}
     XFLUX_DEN_y  :: AbstractArray{Float64, 4}
     XFLUX_DEN_z  :: AbstractArray{Float64, 4}
+    
+    hdiv         :: AbstractArray{Float64, 2}
 
     acc_vars     :: AccumulativeVariables
     
@@ -112,8 +114,8 @@ mutable struct TmdCore    # Adam Bashford
                 Nz = Nz,
                 Nz_av = env.Nz_av,
                 mask3 = env.mask3,
-                noflux_x_mask3 = env.noflux_x_mask3,
-                noflux_y_mask3 = env.noflux_y_mask3,
+            #    noflux_x_mask3 = env.noflux_x_mask3,
+            #    noflux_y_mask3 = env.noflux_y_mask3,
                 Δz_W = Δz_W,
                 Δz_T = Δz_T,
         )
@@ -142,6 +144,8 @@ mutable struct TmdCore    # Adam Bashford
         XFLUX_DEN_y  = zeros(Float64, Nz, Nx, Ny+1, NX)
         XFLUX_DEN_z  = zeros(Float64, Nz+1, Nx, Ny, NX)
    
+        hdiv     = zeros(Float64, Nx, Ny)
+        
         acc_vars = AccumulativeVariables(Nx, Ny, Nz, NX)
  
 
@@ -180,6 +184,7 @@ mutable struct TmdCore    # Adam Bashford
             XFLUX_DEN_x,
             XFLUX_DEN_y,
             XFLUX_DEN_z,
+            hdiv,
             acc_vars,
             valid_idx,
             current_substep,

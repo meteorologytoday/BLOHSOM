@@ -27,8 +27,11 @@ mutable struct OcnEnv
 
     deep_threshold :: Float64                  # threshold where the ocean column is 'deep'
 
-    Kh_m :: Float64   # Horizontal diffusion coe of momentum.
-    Kv_m :: Float64   # Vertical   diffusion coe of momentum.
+    Kh_m_barotropic :: Float64   # Horizontal diffusion coe of momentum (barotropic).
+    Kh_m_baroclinic :: Float64   # Horizontal diffusion coe of momentum (baroclinic).
+    Kv_m_baroclinic :: Float64   # Vertical   diffusion coe of momentum (baroclinic).
+    τ_barotropic_bottomfric    :: Float64   # barotropic mode friction time scale.
+    τ_barotropic_coastfric     :: Float64   # barotropic mode friction time scale.
 
     Kh_X :: AbstractArray{Float64, 1}  # Horizontal diffusion coe of tracers
     Kv_X :: AbstractArray{Float64, 1}  # Vertical   diffusion coe of tracers
@@ -67,6 +70,7 @@ mutable struct OcnEnv
     X_wr_varname          :: AbstractArray{String, 1}
     t_X_wr                :: AbstractArray{Float64, 1}
 
+    flow_scheme           :: Symbol
     MLT_scheme            :: Symbol
     radiation_scheme      :: Symbol
     convective_adjustment :: Bool
@@ -86,8 +90,11 @@ mutable struct OcnEnv
         height_level_counts   :: AbstractArray{Int64, 1},
         NX_passive            :: Int64,
         deep_threshold        :: Float64,
-        Kh_m                  :: Float64,
-        Kv_m                  :: Float64,
+        Kh_m_barotropic       :: Float64,
+        Kh_m_baroclinic       :: Float64,
+        Kv_m_baroclinic       :: Float64,
+        τ_barotropic_bottomfric:: Float64,
+        τ_barotropic_coastfric :: Float64,
         Kh_X                  :: AbstractArray{Float64, 1},
         Kv_X                  :: AbstractArray{Float64, 1},
         R                     :: Float64,
@@ -97,6 +104,7 @@ mutable struct OcnEnv
         X_wr_file             :: AbstractArray{String, 1},
         X_wr_varname          :: AbstractArray{String, 1},
         t_X_wr                :: AbstractArray{Float64, 1},
+        flow_scheme           :: Symbol,
         MLT_scheme            :: Symbol,
         radiation_scheme      :: Symbol,
         convective_adjustment :: Bool,
@@ -211,8 +219,11 @@ end
             NX,
             NX_passive,
             deep_threshold,
-            Kh_m,
-            Kv_m,
+            Kh_m_barotropic,
+            Kh_m_baroclinic,
+            Kv_m_baroclinic,
+            τ_barotropic_bottomfric,
+            τ_barotropic_coastfric,
             Kh_X,
             Kv_X,
             R,
@@ -227,6 +238,7 @@ end
             X_wr_varname,
             t_X_wr,
 
+            flow_scheme,
             MLT_scheme,
             radiation_scheme,
             convective_adjustment,

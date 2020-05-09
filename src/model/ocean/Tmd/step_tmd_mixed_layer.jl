@@ -237,9 +237,7 @@ function doMixedLayerDynamics!(
         OC_updateB!(m, i, j)
         
         if ev.convective_adjustment
-            if OC_doConvectiveAdjustment!(m, i, j;) && (i,j)==(35,20)
-                println("!!!!! ", i, "; ", j)
-            end
+            OC_doConvectiveAdjustment!(m, i, j;)
         end
 
     end

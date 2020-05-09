@@ -30,8 +30,6 @@ function setupBinding!(
         ((:u_total_c, :cU, :xyz, bd[:u_total_c], noXdim), :u_total_c),
         ((:v_total_c, :cV, :xyz, bd[:v_total_c], noXdim), :v_total_c),
         ((:B_c,       :cT, :xyz, bd[:B_c],       noXdim), :B_c),
-
-
         
         # T, S, FLDO and such
         ((:X,    :fT, :zxy, s.X,    hasXdim), :X   ),
@@ -45,9 +43,7 @@ function setupBinding!(
         # forcings
         ((:SWFLX,  :sT, :xy,  f.swflx,  noXdim), :SWFLX),
         ((:NSWFLX, :sT, :xy,  f.nswflx, noXdim), :NSWFLX),
-        ((:u_U,    :fU, :zxy, f.u_U,  noXdim),   :u_U ),
-        ((:v_V,    :fV, :zxy, f.v_V,  noXdim),   :v_V ),
-        ((:w_W,    :fW, :zxy, f.w_W,  noXdim),   :w_W ),
+        ((:w_W,    :fW, :zxy, f.w_W, noXdim),    :w_W),
 
     )
 

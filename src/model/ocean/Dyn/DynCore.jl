@@ -16,7 +16,8 @@ mutable struct DynCore    # Adam Bashford
     s_ops    :: Union{DynamicAdvSpeedUpMatrix, Nothing}
     va       :: Union{VerticalAverager, Nothing}
     Φ_solver :: PhiSolver
-    diffusion_solver :: DiffusionSolver
+    diffusion_solver_Kh_barotropic :: DiffusionSolver
+    diffusion_solver_Kh_baroclinic :: DiffusionSolver
 
     G_idx    :: Dict
     wksp     :: Workspace
@@ -56,14 +57,6 @@ mutable struct DynCore    # Adam Bashford
 
         c_ops = s_ops
 
-        #=
-        @time c_ops = DynamicAdvSpeedUpMatrix(;
-                gi = env.gi,
-                Nz = env.Nz_c,
-                mask2 = env.mask,
-        )
-        =#
-
         Φ_solver = PhiSolver(
             gi    = env.gi,
             mask2 = env.mask,
@@ -71,13 +64,22 @@ mutable struct DynCore    # Adam Bashford
             M     = s_ops,
         )
 
-        diffusion_solver = DiffusionSolver(;
+        diffusion_solver_Kh_barotropic = DiffusionSolver(;
             gi = env.gi,
             M  = s_ops,
             K  = env.Kh_barotropic,
             Δt = env.Δt,
             mask2 = env.mask,
         )
+
+        diffusion_solver_Kh_baroclinic = DiffusionSolver(;
+            gi = env.gi,
+            M  = s_ops,
+            K  = env.Kh_baroclinic,
+            Δt = env.Δt,
+            mask2 = env.mask,
+        )
+
 
 
 
@@ -103,11 +105,11 @@ mutable struct DynCore    # Adam Bashford
         ) 
 
         u_aux = zeros(Float64, Nx, Ny,   Nz)
-        v_aux = zeros(Float64, Nx, Ny, Nz)
+        v_aux = zeros(Float64, Nx, Ny+1, Nz)
         Φ_aux = zeros(Float64, Nx, Ny)
 
         ∂B∂x  = zeros(Float64, Nx, Ny,   Nz)
-        ∂B∂y  = zeros(Float64, Nx, Ny, Nz)
+        ∂B∂y  = zeros(Float64, Nx, Ny+1, Nz)
         
         # making layer-wise views
         layers = Layers()
@@ -129,7 +131,8 @@ mutable struct DynCore    # Adam Bashford
             s_ops,
             va,
             Φ_solver,
-            diffusion_solver,
+            diffusion_solver_Kh_barotropic,
+            diffusion_solver_Kh_baroclinic,
             G_idx,
             wksp,
             u_aux,

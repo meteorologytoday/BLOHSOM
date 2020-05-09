@@ -11,17 +11,30 @@ function determineVelocity!(
     u_U = getSpace!(wksp, :U)
     v_V = getSpace!(wksp, :V)
 
-    #=
-    fr.u_U .= 0.0
-    fr.v_V .= 0.0
-    fr.u_U[1:10, :, 41:50] .= 2.0
-=#
-    # filter velocity
-    mul_autoflat!(u_U, co.ASUM.filter_U, fr.u_U)
-    mul_autoflat!(v_V, co.ASUM.filter_V, fr.v_V)
 
-    fr.u_U .= u_U
-    fr.v_V .= v_V
+    fr.u_T .= 1.0
+    fr.v_T .= 0.0
+
+
+    u_U .= fr.u_U
+    v_V .= fr.v_V
+#    println("Any NaN u_T?", any(isnan.(fr.u_T)))
+#    println("Any NaN v_T?", any(isnan.(fr.v_T)))
+
+
+
+#    println("before Any NaN U_interp_T?", any(isnan.(u_U)))
+    # filter velocity
+#    mul_autoflat!(u_U, co.ASUM.U_interp_T, fr.u_T)
+#    mul_autoflat!(v_V, co.ASUM.V_interp_T, fr.v_T)
+    
+#    println("Any NaN U_interp_T?", any(isnan.(u_U)))
+
+#    println("PAUSE")
+#    readline()
+
+    mul_autoflat!(fr.u_U, co.ASUM.filter_U, u_U)
+    mul_autoflat!(fr.v_V, co.ASUM.filter_V, v_V)
  
     calDIV!(
         ASUM = co.ASUM,
@@ -86,12 +99,29 @@ function advectTracer!(
     # 1. calculate tracer flux
     # 2. calculate tracer flux divergence
 
-    T_sum_old = sum(co.ASUM.T_Δvol_T * view(st.T, :))
-    calDiffAdv_QUICKEST_SpeedUp!(m, Δt)
+    #T_sum_old = sum(co.ASUM.T_Δvol_T * view(st.T, :))
 
+    calDiffAdv_QUICKEST_SpeedUp!(m, Δt)
+    
+
+#=    
+    # deal with top layer
+    w_sfc    = view(fr.w_W,  1, :, :)
+    Δz_T_sfc = ev.z_bnd[1] - ev.z_bnd[2]#view(co.Δz_T, 1, :, :)
+    for x = 1:ev.NX
+        X = view(st.X, 1, :, :, x) 
+#        @. view(co.XFLUX_top, :, :, x) = X * w_sfc
+        @. X -= Δt * w_sfc * X / Δz_T_sfc
+    end
+    #st.Xsfcsponge += co.XFLUX_top * Δt 
+=#
 
     @. st.X  += Δt * co.XFLUX_CONV
     @. st.ΔX += Δt * st.dΔXdt
+
+    #T_sum_new = sum(co.ASUM.T_Δvol_T * view(st.T, :))
+    #println("Total_heat_new: ", T_sum_new, "; change: ", (T_sum_new-T_sum_old)/T_sum_old * 100, "%")
+
 
 #    T_sum_new = sum(co.ASUM.T_Δvol_T * view(st.T, :))
 
@@ -118,6 +148,10 @@ function advectTracer!(
         end
     end
 
+
+
+
+
 #    println("## After T_ML=", st.X_ML[3,3,1])
 
 end
@@ -133,6 +167,9 @@ function calVerVelBnd!(;
     mask3    :: AbstractArray{Float64, 3},   # ( Nz_bone  , Nx  , Ny   )
 )
 
+#    println(size(w_bnd))
+#    println(size(div))
+#    println(size(hs))
 #    local tmp = tmp_σ = 0.0
     for i=1:Nx, j=1:Ny
         
@@ -140,7 +177,7 @@ function calVerVelBnd!(;
         w_bnd[1, i, j]     = 0.0
         w_bnd[_Nz+1, i, j] = 0.0
 
-        for k=_Nz:-1:2
+        for k=_Nz:-1:1
 
             if mask3[k, i, j] == 0.0
                 break
@@ -149,6 +186,17 @@ function calVerVelBnd!(;
             #w_bnd[k+1, i, j] = w_bnd[k, i, j] + div[k, i, j] * hs[k, i, j]
             w_bnd[k, i, j] = w_bnd[k+1, i, j] - div[k, i, j] * hs[k, i, j]
         end
+        
+        #=
+        for k=1:_Nz
+
+            if mask3[k, i, j] == 0.0
+                break
+            end
+            
+            w_bnd[k+1, i, j] = w_bnd[k, i, j] + div[k, i, j] * hs[k, i, j]
+        end
+        =#
 
 #        tmp   += w_bnd[Nz[i, j]+1, i, j] * gi.dσ[i, j]
 #        tmp_σ += gi.dσ[i, j]

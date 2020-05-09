@@ -205,8 +205,14 @@ function syncData!(
         end 
     elseif direction == :PULL
         for db_label in dbs
+
             db = data_exchanger.bindings[db_label]
             db.here_pull_view .= db.there_pull_view
+
+#            if db.here.id == :SWFLX
+#                println("db: id: ", db.here.id, "; ", db.there.id, "; size: ", size(db.there_push_view), "; sizehere: ", size(db.here_push_view))
+#                println("sum: ", sum(db.there.odata))
+#            end
         end 
     else
         throw(ErrorException("Unknown direction keyword: " * string(direction)))
