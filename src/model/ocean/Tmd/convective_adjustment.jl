@@ -16,7 +16,7 @@ function OC_doConvectiveAdjustment!(
         FLDO     = m.state.FLDO[i, j],
         Nz       = m.env.Nz_av[i, j],
         h_ML_max = m.env.h_ML_max[i, j],
-        #verbose = true || (i, j) == (35, 20),
+        #verbose = (i, j) == (60, 59),
     )
 
     return if_adjust
@@ -44,7 +44,7 @@ function doConvectiveAdjustment!(;
     FLDO :: Integer,
     Nz   :: Integer,
     h_ML_max :: Float64,
-    #verbose :: Bool = false
+#    verbose :: Bool = false
 )
     
     if_adjust = false
@@ -117,6 +117,7 @@ function doConvectiveAdjustment!(;
                     top_layer = i
                     stage = :search_bot_layer
                 else
+
                     continue
                 end
             end
@@ -162,8 +163,13 @@ function doConvectiveAdjustment!(;
 
             if stage == :start_adjustment
                 #println(":start_adjustment")
-
-                
+                    #=
+                if verbose
+                    println("Found top-layer:", top_layer)
+                    println("Found peak-layer:", peak_layer)
+                    println("Found bot-layer:", bot_layer)
+                end
+                =#
                 bot_z = zs[bot_layer+1]
                 #println(zs[bot_layer+1]," v.s.  ", -h_ML_max, "; bot_z: ", bot_z)
                 top_z = (top_layer == -1) ? 0.0 : (

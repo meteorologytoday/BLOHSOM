@@ -203,7 +203,6 @@ function calAuxV!(
     mul3!(core.∂B∂x, c_ops.U_∂x_T, fr.B)
     mul3!(core.∂B∂y, c_ops.V_∂y_T, fr.B)
 
-
     # cal Coriolis force
     fu   = getSpace!(wksp, :V)
     fv   = getSpace!(wksp, :U)

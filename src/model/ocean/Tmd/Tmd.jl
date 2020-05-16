@@ -97,8 +97,15 @@ module Tmd
         #println("sum of nswflx: ", sum(fr.nswflx))
         #println("co.current_substep: ", co.current_substep)
         advectTracer!(m)
+
+        #println("T profile", st.T[:, 63, 82])
+        #println("b profile", st.b[:, 63, 82])
         doMixedLayerDynamics!(m)
 
+        #if isnan(st.T[1, 60, 59])
+        if (isnan(st.T[1, 63, 82]))
+            throw(ErrorException("STOP"))
+        end
         
         if co.current_substep == ev.substeps
             # do slow processes

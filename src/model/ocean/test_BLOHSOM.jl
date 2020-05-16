@@ -38,15 +38,22 @@ else
 end
 
 
-#run_days =6*24
-#coupling = 1
-#substeps = 1
+run_days = 30
+coupling = 12
+substeps_dyn = 2
+substeps_tmd = 1
+rec_frequency = 1
 
 
 run_days = 120
-coupling = 4
-substeps = 6
+coupling = 12
+substeps_dyn = 2
+substeps_tmd = 1
+rec_frequency = 12
 
+
+Δt_day = 86400.0
+Δt_coupling = Δt_day / coupling
 
 
 
@@ -107,17 +114,17 @@ gi = PolelikeCoordinate.genGridInfo(gf);
 topo = similar(gf.mask)
 topo .= -4000
 z_bnd_f = collect(Float64, range(0.0, -500.0, length=21))
-push!(z_bnd_f, -4000.0)
+append!(z_bnd_f, [-575, -800, -1475, -2000, -3000, -4000])
 ocn_env = BLOHSOM.OcnEnv(
     hrgrid                = gf,
     topo_file             = topo_file,
     topo_varname          = "topo",
-    Δt                    = Δt_day / coupling,
-    substeps_dyn          = substeps,
-    substeps_tmd          = substeps,
+    Δt                    = Δt_coupling,
+    substeps_dyn          = substeps_dyn,
+    substeps_tmd          = substeps_tmd,
     z_bnd_f               = z_bnd_f,
     #height_level_counts   = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6],
-    height_level_counts   = [2, 2, 2, 2, 2, 2, 9],
+    height_level_counts   = [2, 2, 2, 2, 2, 2, 14],
     NX_passive            = 0,
     deep_threshold        = 4000.0,
     Kh_m_barotropic       = 10000.0,
@@ -166,23 +173,28 @@ mask3 = repeat(reshape(gf.mask, 1, gf.Nx, gf.Ny), outer=(length(z_bnd_f)-1, 1, 1
 basic_T   = z_mid * 0
 anomaly_T = z_mid * 0
 anomaly_T2 = z_mid * 0
-    
-@. basic_T = 10 #+ 15 * exp(z_mid / σz)
+
+f = (z,)-> (tanh((z-(-200))/50)+1)/2
+
+@. basic_T = 10 + 10 * f(z_mid) #10 + 15 * exp(z_mid / σz)
 
 #warmpool_bnd_z = - 300.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
 #warmpool_bnd_z = - 300.0 * exp.(- ( (gi.c_y .- ( Ly/4.0)).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
 #warmpool_bnd_z = - 200.0 * exp.(- ( (gi.c_y *0).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
 warmpool_bnd_z = - 200.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
 warmpool_bnd_z = repeat(reshape(warmpool_bnd_z, 1, size(warmpool_bnd_z)...), outer=(size(z_mid)[1], 1, 1))
-anomaly_T[z_mid .> warmpool_bnd_z] .= 20.0
-
-warmpool_bnd_z = - 200.0 * exp.(- ( ((gi.c_lat.-π/2) * gi.R ).^2 + (gi.R * 0 * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
-warmpool_bnd_z = repeat(reshape(warmpool_bnd_z, 1, size(warmpool_bnd_z)...), outer=(size(z_mid)[1], 1, 1))
-anomaly_T2[z_mid .> warmpool_bnd_z] .= 20.0
 
 
-total_T = basic_T  + anomaly_T + anomaly_T2
-total_T[1:4, :, :] .= 20.0
+anomaly_T[z_mid .> warmpool_bnd_z] .= 5.0
+
+#warmpool_bnd_z = - 200.0 * exp.(- ( ((gi.c_lat.- (80* π/180)) * gi.R ).^2 + (gi.R * 0 * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
+#warmpool_bnd_z = repeat(reshape(warmpool_bnd_z, 1, size(warmpool_bnd_z)...), outer=(size(z_mid)[1], 1, 1))
+#anomaly_T2[z_mid .> warmpool_bnd_z] .= 20.0
+
+
+total_T = basic_T  #+ anomaly_T #+ anomaly_T2
+total_T[z_mid .> warmpool_bnd_z] .= 25.0
+#total_T[1:4, :, :] .= 20.0
 
 h_ML = gf.mask * 0 .+ 10.0
 
@@ -217,21 +229,37 @@ RecordTool.record!(recorder)
 RecordTool.avgAndOutput!(recorder)
 
 
+coupling_cnt = 0
+total_cnt = 0
 @time for day=1:run_days
     println(format("##### Run Day {:d} #####", day ))
 
    
-    if day < 20 
-    #    du[:SWFLX].data .= - 1000.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
+#=    if day <= 10 
+        du[:SWFLX].data .= - 1000.0 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)/2).^2) / (σ_warmpool^2.0) / 2)
     else
-    #    du[:SWFLX].data .= 0.0
+        du[:SWFLX].data .= 0.0
     end
-
+=#
     @time for c = 1:coupling
         print(format(" - Coupling: {:d}/{:d}\r", c, coupling))
         BLOHSOM.stepModel!(model, false)
         RecordTool.record!(recorder)
+
+        global coupling_cnt += 1
+        global total_cnt += 1
+        
+        if coupling_cnt == rec_frequency
+            print("Record!")
+            RecordTool.avgAndOutput!(recorder)
+            coupling_cnt =  0
+        end
+
     end
-    RecordTool.avgAndOutput!(recorder)
+        
+
+
+
+
 end
 println("Done.")

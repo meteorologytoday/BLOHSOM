@@ -14,6 +14,14 @@ function determineVelocity!(
 
     u_U .= fr.u_U
     v_V .= fr.v_V
+
+#=
+    println("findmax(u_U) : ", findmax(abs.(fr.u_U[:, :, 81:end])))
+    println("findmax(v_V) : ", findmax(abs.(fr.v_V[:, :, 81:end])))
+    println("findmax(w_W) : ", findmax(abs.(fr.w_W[:, :, 81:end])))
+    println("findmax(T) : ",   findmax(st.T[:, :, 81:end]))
+    println("findmin(T) : ",   findmin(st.T[:, :, 81:end]))
+=#        
 #    println("Any NaN u_T?", any(isnan.(fr.u_T)))
 #    println("Any NaN v_T?", any(isnan.(fr.v_T)))
 
@@ -50,7 +58,8 @@ function determineVelocity!(
         div   = div,
         mask3 = ev.mask3,
     )
-    
+    #println("DIV: ", div[end-2:end, 60, 59])    
+    #println("w_W: ", fr.w_W[end-3:end, 60, 59])    
 
 end
 
@@ -113,6 +122,9 @@ function advectTracer!(
 =#
     @. st.X  += Δt * co.XFLUX_CONV
     @. st.ΔX += Δt * st.dΔXdt
+
+#    println("co.XFLUX_CONV * Δt = ", Δt * co.XFLUX_CONV[:, 60, 59, 1])
+#    println(" u_U = ", fr.u_Uco.XFLUX_CONV[:, 60, 59, 1])
 
     #T_sum_new = sum(co.ASUM.T_Δvol_T * view(st.T, :))
     #println("Total_heat_new: ", T_sum_new, "; change: ", (T_sum_new-T_sum_old)/T_sum_old * 100, "%")
