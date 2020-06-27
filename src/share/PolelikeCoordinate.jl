@@ -342,13 +342,15 @@ module PolelikeCoordinate
                 ovf_n[i, j] =   ivf_e[i, j] * gi.sinα[i, j] + ivf_n[i, j] * gi.cosα[i, j]
             end
      
-        else                       # from displaced pole grid onto outside world
+        elseif direction == :Backward    # from pole-like grid onto regular grid
 
             for i=1:gi.Nx, j=1:gi.Ny
                 ovf_e[i, j] =   ivf_e[i, j] * gi.cosα[i, j] + ivf_n[i, j] * gi.sinα[i, j]
                 ovf_n[i, j] = - ivf_e[i, j] * gi.sinα[i, j] + ivf_n[i, j] * gi.cosα[i, j]
             end
 
+        else
+            throw(ErrorException("Unknown direction: " * string(direction)))
         end
 
     end
