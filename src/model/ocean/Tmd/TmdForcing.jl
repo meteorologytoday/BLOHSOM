@@ -42,38 +42,38 @@ mutable struct TmdForcing
         Nz = env.Nz
         NX = env.NX
 
-        X_wr = zeros(Float64, Nz, Nx, Ny, NX)
+        X_wr = allocate(Float64, Nz, Nx, Ny, NX)
         T_wr = view(X_wr, :, :, :, 1)
         S_wr = view(X_wr, :, :, :, 2)
  
-        XSAS_wr = zeros(Float64, Nx, Ny, NX)
+        XSAS_wr = allocate(Float64, Nx, Ny, NX)
         TSAS_wr = view(XSAS_wr, :, :, 1)
         SSAS_wr = view(XSAS_wr, :, :, 2)
  
-        u_T = zeros(Float64, Nz, Nx, Ny)
-        v_T = zeros(Float64, Nz, Nx, Ny)
+        u_T = allocate(Float64, Nz, Nx, Ny)
+        v_T = allocate(Float64, Nz, Nx, Ny)
  
-        u_U = zeros(Float64, Nz, Nx, Ny)
-        v_V = zeros(Float64, Nz, Nx, Ny+1)
-        w_W = zeros(Float64, Nz+1, Nx, Ny)
+        u_U = allocate(Float64, Nz, Nx, Ny)
+        v_V = allocate(Float64, Nz, Nx, Ny+1)
+        w_W = allocate(Float64, Nz+1, Nx, Ny)
  
-        qflx2atm = zeros(Float64, Nx, Ny)
-        qflx2atm_pos = zeros(Float64, Nx, Ny)
-        qflx2atm_neg = zeros(Float64, Nx, Ny)
+        qflx2atm = allocate(Float64, Nx, Ny)
+        qflx2atm_pos = allocate(Float64, Nx, Ny)
+        qflx2atm_neg = allocate(Float64, Nx, Ny)
 
-        qflx_X  = zeros(Float64, Nx, Ny, NX)
+        qflx_X  = allocate(Float64, Nx, Ny, NX)
         qflx_T = view(qflx_X, :, :, 1)
         qflx_S = view(qflx_X, :, :, 2)
  
-        τx = zeros(Float64, Nx, Ny)
-        τy = zeros(Float64, Nx, Ny)
+        τx = allocate(Float64, Nx, Ny)
+        τy = allocate(Float64, Nx, Ny)
         
-        nswflx = zeros(Float64, Nx, Ny)
-        swflx  = zeros(Float64, Nx, Ny)
-        vsflx  = zeros(Float64, Nx, Ny)
-        ifrac  = zeros(Float64, Nx, Ny)
+        nswflx = allocate(Float64, Nx, Ny)
+        swflx  = allocate(Float64, Nx, Ny)
+        vsflx  = allocate(Float64, Nx, Ny)
+        ifrac  = allocate(Float64, Nx, Ny)
         
-        h_ML = zeros(Float64, Nx, Ny)
+        h_ML = allocate(Float64, Nx, Ny)
  
          return new(
             X_wr,

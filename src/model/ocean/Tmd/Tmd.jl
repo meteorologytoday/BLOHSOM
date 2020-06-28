@@ -45,7 +45,7 @@ module Tmd
 
     include("../MatrixOperators.jl")
     include("../Workspace.jl")
-    #include("AdvectionSpeedUpMatrix.jl.old")
+    include("allocate.jl")
     include("AdvectionSpeedUpMatrix.jl")
     include("AccumulativeVariables.jl")
     include("TmdEnv.jl")

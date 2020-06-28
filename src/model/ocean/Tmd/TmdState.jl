@@ -39,36 +39,36 @@ mutable struct TmdState
         Nz = env.Nz
         NX = env.NX
 
-        X = zeros(Float64, Nz, Nx, Ny, NX)
+        X = allocate(Float64, Nz, Nx, Ny, NX)
         T = view(X, :, :, :, 1)
         S = view(X, :, :, :, 2)
 
 
-        X_ML = zeros(Float64, Nx, Ny, NX)
+        X_ML = allocate(Float64, Nx, Ny, NX)
         T_ML = view(X_ML, :, :, 1)
         S_ML = view(X_ML, :, :, 2)
         
-        ΔX = zeros(Float64, Nx, Ny, NX)
+        ΔX = allocate(Float64, Nx, Ny, NX)
         ΔT = view(ΔX, :, :, 1)
         ΔS = view(ΔX, :, :, 2)
  
-        dΔXdt = zeros(Float64, Nx, Ny, NX)
+        dΔXdt = allocate(Float64, Nx, Ny, NX)
         dΔTdt = view(dΔXdt, :, :, 1)
         dΔSdt = view(dΔXdt, :, :, 2)
 
        
-        h_ML = zeros(Float64, Nx, Ny)
-        h_MO = zeros(Float64, Nx, Ny)
+        h_ML = allocate(Float64, Nx, Ny)
+        h_MO = allocate(Float64, Nx, Ny)
         
-        FLDO = zeros(Int64, Nx, Ny)
-        FLDO_ratio_top = zeros(Float64, Nx, Ny)
-        FLDO_ratio_bot = zeros(Float64, Nx, Ny)
+        FLDO = allocate(Int64, Nx, Ny)
+        FLDO_ratio_top = allocate(Float64, Nx, Ny)
+        FLDO_ratio_bot = allocate(Float64, Nx, Ny)
 
-        b    = zeros(Float64, Nz, Nx, Ny)
-        b_ML = zeros(Float64, Nx, Ny)
+        b    = allocate(Float64, Nz, Nx, Ny)
+        b_ML = allocate(Float64, Nx, Ny)
         
-        b_mixed = zeros(Float64, Nz, Nx, Ny)
-        B       = zeros(Float64, Nz, Nx, Ny)
+        b_mixed = allocate(Float64, Nz, Nx, Ny)
+        B       = allocate(Float64, Nz, Nx, Ny)
 
         return new(
             X,

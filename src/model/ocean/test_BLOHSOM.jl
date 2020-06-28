@@ -38,7 +38,7 @@ else
 end
 
 
-run_days = 30
+run_days = 5
 coupling = 12
 substeps_dyn = 2
 substeps_tmd = 1

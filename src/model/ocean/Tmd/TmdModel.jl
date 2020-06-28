@@ -1,12 +1,14 @@
 mutable struct TmdModel
 
+    pplan   :: ParallelPlan
     env     :: TmdEnv
     core    :: TmdCore
-    state   :: TmdState
+    state   :: Array{TmdState, 1}
     diag    :: TmdDiag
     forcing :: TmdForcing
 
     function TmdModel(;
+        workers,
         gi,
         Δt,
         substeps,
@@ -28,6 +30,7 @@ mutable struct TmdModel
         use_Qflux      = true,
         finding_Qflux  = false,
     )
+
 
         env = TmdEnv(;
             gi         = gi,
@@ -52,17 +55,29 @@ mutable struct TmdModel
             finding_Qflux = finding_Qflux,
         )
 
-
-        state   = TmdState(env)
+        pplan = ParallelPlan(env, workers)
+        states  = [TmdState(env) for _ in 1:2]
         diag    = TmdDiag(env)
         forcing = TmdForcing(env)
-        
-        core  = TmdCore(env, state, diag, forcing)
+ 
+        # Create slaves based on plan
+        slaves = [ TmdSlave(
+            pplan,
+            states,
+            diag,
+            forcing
+        ) for _ in 1:length(pplan.pids) ]
+
+
+
+      
+        # core now should belong to each slave 
+        # core  = TmdCore(env, state, diag, forcing)
 
 
 
         return new(
-            env, core, state, diag, forcing
+            env, state, diag, forcing
         )
 
     end
