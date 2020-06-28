@@ -7,12 +7,12 @@ function init!(
     ocn_env = (typeof(ocn_env) == String) ? loadOcnEnv(env) : ocn_env
     
     shared_data    = SharedData(ocn_env)
-    job_dist_info  = JobDistributionInfo(ocn_env; overlap=2)
+    tmd_pplan  = TmdParallelPlan(ocn_env)
 
     model = Model(
         ocn_env,
         shared_data,
-        job_dist_info,
+        tmd_pplan,
     )
 
     println("Register Shared Data") 

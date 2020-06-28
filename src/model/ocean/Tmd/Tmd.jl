@@ -32,7 +32,8 @@ module Tmd
         end )
     end
 
-
+    using SharedArrays
+    using Distributed
     using SparseArrays
     using Formatting
     using LinearAlgebra    
@@ -43,6 +44,7 @@ module Tmd
     include("../../../share/constants.jl")
     include("../../../share/ocean_state_function.jl")
 
+    include("ParallelPlan.jl")
     include("../MatrixOperators.jl")
     include("../Workspace.jl")
     include("allocate.jl")
@@ -50,10 +52,9 @@ module Tmd
     include("AccumulativeVariables.jl")
     include("TmdEnv.jl")
     include("TmdState.jl")
-    include("TmdDiag.jl")
-    include("TmdForcing.jl")
     include("TmdCore.jl")
     include("TmdModel.jl")
+    include("TmdMaster.jl")
 
     # functions
     include("latent_heat_release_of_freezing.jl")

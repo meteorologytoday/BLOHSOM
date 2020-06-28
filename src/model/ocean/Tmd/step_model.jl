@@ -15,28 +15,6 @@ function determineVelocity!(
     u_U .= fr.u_U
     v_V .= fr.v_V
 
-#=
-    println("findmax(u_U) : ", findmax(abs.(fr.u_U[:, :, 81:end])))
-    println("findmax(v_V) : ", findmax(abs.(fr.v_V[:, :, 81:end])))
-    println("findmax(w_W) : ", findmax(abs.(fr.w_W[:, :, 81:end])))
-    println("findmax(T) : ",   findmax(st.T[:, :, 81:end]))
-    println("findmin(T) : ",   findmin(st.T[:, :, 81:end]))
-=#        
-#    println("Any NaN u_T?", any(isnan.(fr.u_T)))
-#    println("Any NaN v_T?", any(isnan.(fr.v_T)))
-
-
-
-#    println("before Any NaN U_interp_T?", any(isnan.(u_U)))
-    # filter velocity
-#    mul_autoflat!(u_U, co.ASUM.U_interp_T, fr.u_T)
-#    mul_autoflat!(v_V, co.ASUM.V_interp_T, fr.v_T)
-    
-#    println("Any NaN U_interp_T?", any(isnan.(u_U)))
-
-#    println("PAUSE")
-#    readline()
-
     mul_autoflat!(fr.u_U, co.ASUM.filter_U, u_U)
     mul_autoflat!(fr.v_V, co.ASUM.filter_V, v_V)
  
@@ -58,8 +36,6 @@ function determineVelocity!(
         div   = div,
         mask3 = ev.mask3,
     )
-    #println("DIV: ", div[end-2:end, 60, 59])    
-    #println("w_W: ", fr.w_W[end-3:end, 60, 59])    
 
 end
 
