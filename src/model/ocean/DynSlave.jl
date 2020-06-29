@@ -1,6 +1,6 @@
 #include("../../share/constants.jl")
 
-mutable struct DynSlave
+mutable struct DynDuke
 
     model        :: Dyn.DynModel
 
@@ -9,7 +9,7 @@ mutable struct DynSlave
 
     data_exchanger :: DataExchanger
 
-    function DynSlave(
+    function DynDuke(
         ocn_env      :: OcnEnv,
         shared_data  :: SharedData,
     )
@@ -49,8 +49,6 @@ mutable struct DynSlave
         data_exchanger = DataExchanger([
             :FR_TMD,
             :TO_TMD,
-            :TO_MAS,
-            :TEST,
         ])
 
         return new(

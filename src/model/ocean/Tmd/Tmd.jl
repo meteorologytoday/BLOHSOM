@@ -45,7 +45,7 @@ module Tmd
     include("ParallelPlan.jl")
     include("../MatrixOperators.jl")
     include("../Workspace.jl")
-    include("allocate.jl")
+    include("../allocate.jl")
     include("AdvectionSpeedUpMatrix.jl")
     include("AccumulativeVariables.jl")
     include("TmdEnv.jl")
@@ -112,7 +112,7 @@ module Tmd
             for p in m.pplan.pids
                 @spawnat p let
                     advectTracer_part2!(tmd_model)
-                    #doMixedLayerDynamics!(tmd_model)
+                    doMixedLayerDynamics!(tmd_model)
                 end
             end
         end
@@ -123,7 +123,7 @@ module Tmd
                 for p in m.pplan.pids
                     @spawnat p let
                         # do slow processes
-                        #calBuoyancyPressure!(tmd_model)
+                        calBuoyancyPressure!(tmd_model)
                     end
                 end
             end

@@ -19,6 +19,7 @@ mutable struct OcnEnv
     Nz_c :: Int64           # number of coarse grids in z direction ( dyn )
     
     z_bnd_f :: AbstractArray{Float64, 1}           # z boundaries of fine grid
+    z_bnd_c :: AbstractArray{Float64, 1}           # z boundaries of fine grid
     height_level_counts :: AbstractArray{Int64, 1} # how many layers in fine grid is a coarse grid layer
     
     # First two tracers are T and S. Passive tracers starts from 3.
@@ -132,6 +133,19 @@ mutable struct OcnEnv
         Nz_f = length(z_bnd_f) - 1
         Nz_c = length(height_level_counts)
 
+        z_bnd_c = zeros(Float64, Nz_c + 1)
+        
+        z_bnd_c[1] = z_bnd_f[1]
+        idx = 1
+        for (k, cnt) in enumerate(height_level_counts)
+            idx += cnt
+            z_bnd_c[k+1] = z_bnd_f[idx]
+        end
+
+        if z_bnd_c[end] != z_bnd_f[end]
+            throw(ErrorException("Corse and fine z bnds mismatch."))
+        end
+
         if sum(height_level_counts) != Nz_f
             throw(ErrorException("sum of height_level_counts must match Nz_f which is length(z_bnd_f) - 1"))
         end       
@@ -215,6 +229,7 @@ end
             Nz_f,
             Nz_c,
             z_bnd_f,
+            z_bnd_c,
             height_level_counts,
             NX,
             NX_passive,
