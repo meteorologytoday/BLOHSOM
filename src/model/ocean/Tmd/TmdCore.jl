@@ -44,9 +44,7 @@ mutable struct TmdCore    # Adam Bashford
     
     valid_idx    :: AbstractArray{Int64, 2}
 
-    current_substep :: Int64
-
-    function TmdCore(env, state, diag, forcing)
+    function TmdCore(env, state)
         
         Nx = env.Nx
         Ny = env.Ny
@@ -149,12 +147,12 @@ mutable struct TmdCore    # Adam Bashford
         acc_vars = AccumulativeVariables(Nx, Ny, Nz, NX)
  
 
-        valid_idx = zeros(Int64, 2, sum(mask2 .== 1.0))
+        valid_idx = zeros(Int64, 2, sum(mask2[:, env.update_yrng_T] .== 1.0))
         let k = 1
-            for idx in CartesianIndices((Nx, Ny))
-                if mask2[idx] == 1.0
-                    valid_idx[1, k] = idx[1]
-                    valid_idx[2, k] = idx[2]
+            for i=1:Nx, j=env.update_yrng_T  # in CartesianIndices((Nx, Ny))
+                if mask2[i, j] == 1.0
+                    valid_idx[1, k] = i
+                    valid_idx[2, k] = j
 
                     k += 1
                 end
@@ -187,7 +185,6 @@ mutable struct TmdCore    # Adam Bashford
             hdiv,
             acc_vars,
             valid_idx,
-            current_substep,
         )
     end
 end

@@ -1,3 +1,16 @@
+function initialization!(
+    m :: TmdMaster
+)
+
+    @sync let
+        for p in m.pplan.pids
+            @spawnat p let
+                initialization!(tmd_model)
+            end
+        end
+    end
+
+end
 
 function initialization!(
     m :: TmdModel

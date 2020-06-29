@@ -1,5 +1,5 @@
 mutable struct TmdState
-
+    
     # Prognostic variables 
     X         :: AbstractArray{Float64, 4}
     T         :: AbstractArray{Float64, 3}

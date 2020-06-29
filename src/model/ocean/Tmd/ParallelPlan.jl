@@ -1,21 +1,20 @@
 mutable struct ParallelPlan
 
     pids           :: AbstractArray{Integer, 1}
-    tmd_slave_pids :: AbstractArray{Integer, 1}
 
     #
-    # `visible_rng` is the range slave can view the master variable 
+    # `visible_yrng` is the range slave can view the master variable 
     # The range index is the index of master variable. It is used to
     # create a view of master variable.
     #
-    # `update_rng` is the range slave should update the master variable.
+    # `update_yrng` is the range slave should update the master variable.
     # The range index is the index of slave variable. It is used to
     # create a view of slave variable.
     #
 
-    visible_rngs_T :: Array{UnitRange}
-    visible_rngs_V :: Array{UnitRange}
-    update_rngs_T  :: Array{UnitRange}
+    visible_yrngs_T :: Array{UnitRange}
+    visible_yrngs_V :: Array{UnitRange}
+    update_yrngs_T  :: Array{UnitRange}
 
 
     function ParallelPlan(
@@ -31,14 +30,13 @@ mutable struct ParallelPlan
             throw(ErrorException("No available workers!"))
         end
 
-        visible_rngs_T, visible_rngs_V, update_rngs_T = calParallizationRange(N=Ny, P=length(tmd_slave_pids))
+        visible_yrngs_T, visible_yrngs_V, update_yrngs_T = calParallizationRange(N=Ny, P=length(tmd_slave_pids))
 
         return new(
-            pids,
             tmd_slave_pids,
-            visible_rngs_T,
-            visible_rngs_V,
-            update_rngs_T,
+            visible_yrngs_T,
+            visible_yrngs_V,
+            update_yrngs_T,
         ) 
 
     end
@@ -48,8 +46,10 @@ end
 function calParallizationRange(;
     N :: Integer,     # Total T grids
     P :: Integer,     # Number of procs
+    L :: Integer = 2  # Overlaps
 )
-    if N < P
+
+    if ! (N >= max(1, L) * P)
         throw(ErrorException("Condition must be satisfied: N >= max(1, L) * P"))
     end
 
@@ -57,17 +57,17 @@ function calParallizationRange(;
     R = N - n̄ * P
 
 
-    visible_rngs_T = Array{Union{UnitRange, Nothing}}(undef, P)
-    visible_rngs_V = Array{Union{UnitRange, Nothing}}(undef, P)
-    update_rngs_T  = Array{Union{UnitRange, Nothing}}(undef, P)
+    visible_yrngs_T = Array{Union{UnitRange, Nothing}}(undef, P)
+    visible_yrngs_V = Array{Union{UnitRange, Nothing}}(undef, P)
+    update_yrngs_T  = Array{Union{UnitRange, Nothing}}(undef, P)
     
 
 
     if P == 1   
 
-        visible_rngs_T[1] = 1:N
-        visible_rngs_V[1] = 1:N+1
-        update_rngs_T[1]  = 1:N
+        visible_yrngs_T[1] = 1:N
+        visible_yrngs_V[1] = 1:N+1
+        update_yrngs_T[1]  = 1:N
 
     else 
    
@@ -79,21 +79,21 @@ function calParallizationRange(;
 
             if p == 1
 
-                visible_rngs_T[p] = cnt:cnt+(m-1)+L
-                visible_rngs_V[p] = cnt:cnt+(m-1)+L+1
-                update_rngs_T[p]  = 1:m
+                visible_yrngs_T[p] = cnt:cnt+(m-1)+L
+                visible_yrngs_V[p] = cnt:cnt+(m-1)+L+1
+                update_yrngs_T[p]  = 1:m
 
             elseif p == P
  
-                visible_rngs_T[p] = cnt-L:cnt+(m-1)
-                visible_rngs_V[p] = cnt-L:cnt+(m-1)+1
-                update_rngs_T[p]  = L+1:L+m
+                visible_yrngs_T[p] = cnt-L:cnt+(m-1)
+                visible_yrngs_V[p] = cnt-L:cnt+(m-1)+1
+                update_yrngs_T[p]  = L+1:L+m
            
             else
 
-                visible_rngs_T[p] = cnt-L:cnt+(m-1)+L
-                visible_rngs_V[p] = cnt-L:cnt+(m-1)+L+1
-                update_rngs_T[p]  = L+1:L+m
+                visible_yrngs_T[p] = cnt-L:cnt+(m-1)+L
+                visible_yrngs_V[p] = cnt-L:cnt+(m-1)+L+1
+                update_yrngs_T[p]  = L+1:L+m
 
             end
             cnt += m
@@ -107,7 +107,23 @@ function calParallizationRange(;
         end
     end
 
-    return visible_rngs_T, visible_rngs_V, update_rngs_T
+    println("N: ", N, "; P: ", P)
+
+    for p = 1:P
+        println("Range_T of ", p, ": ", visible_yrngs_T[p])
+    end
+
+    for p = 1:P
+        println("Range_V of ", p, ": ", visible_yrngs_V[p])
+    end
+
+    for p = 1:P
+        println("Update_T of ", p, ": ", update_yrngs_T[p])
+    end
+
+
+
+    return visible_yrngs_T, visible_yrngs_V, update_yrngs_T
 
 end
 

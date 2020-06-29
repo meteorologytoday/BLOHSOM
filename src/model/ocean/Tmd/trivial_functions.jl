@@ -64,7 +64,7 @@ end
 function updateFLDO!(
     m :: TmdModel,
 )
-    for i=1:m.env.Nx, j=1:m.env.Ny
+    for i=1:m.env.Nx, j=m.env.update_yrng_T
         OC_updateFLDO!(m, i, j)
     end
 end
@@ -145,7 +145,7 @@ end
 
 function updateB!(m::TmdModel)
 
-    for i=1:m.env.Nx, j=1:m.env.Ny
+    for i=1:m.env.Nx, j=m.env.update_yrng_T
         OC_updateB!(m, i, j)
     end
 

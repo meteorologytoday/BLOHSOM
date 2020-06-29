@@ -4,16 +4,16 @@ function doMixedLayerDynamics!(
 
     @fast_extract m
 
-    ifrac   = fr.ifrac
+    ifrac   = st.ifrac
 
-    taux    = fr.τx
-    tauy    = fr.τy
+    taux    = st.τx
+    tauy    = st.τy
 
-    swflx   = fr.swflx
-    nswflx  = fr.nswflx
-    vsflx   = fr.vsflx
-    qflx_T  = fr.qflx_T
-    qflx_S  = fr.qflx_S
+    swflx   = st.swflx
+    nswflx  = st.nswflx
+    vsflx   = st.vsflx
+    qflx_T  = st.qflx_T
+    qflx_S  = st.qflx_S
 
     Δt      = ev.Δt_substep        
 
@@ -76,7 +76,7 @@ function doMixedLayerDynamics!(
 
         if ev.MLT_scheme == :prescribe # h_ML is datastream
 
-            new_h_ML = fr.h_ML[i, j]
+            new_h_ML = st.pres_h_ML[i, j]
 
         else        # h_ML is prognostic
  

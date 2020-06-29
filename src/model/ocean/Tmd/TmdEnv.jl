@@ -11,6 +11,8 @@ mutable struct TmdEnv
     Nz         :: Int64           # Number of layers  in k direction
     NX         :: Int64   
     NX_passive :: Int64
+
+    update_yrng_T :: UnitRange
  
     z_bnd  :: AbstractArray{Float64, 1} # Unmasked z_bnd_av bone
     topo     :: AbstractArray{Float64, 2} # Depth of the topography. Negative value if it is underwater
@@ -58,6 +60,7 @@ mutable struct TmdEnv
  
     function TmdEnv(;
         gi         :: PolelikeCoordinate.GridInfo,
+        update_yrng_T   :: Union{Nothing, UnitRange},
         Δt         :: Float64,
         substeps   :: Int64,
         z_bnd      :: AbstractArray{Float64, 1},
@@ -284,10 +287,17 @@ mutable struct TmdEnv
 
         # ===== [END] check integrity =====
 
+        if update_yrng_T == nothing
+            update_yrng_T = 1:Ny
+        end
+
         ocn = new(
             gi,
             Δt, Δt/substeps, substeps,
             Nx, Ny, Nz, NX, NX_passive,
+
+            update_yrng_T,
+
             z_bnd, topo,
             z_bnd_av, Nz_av,
 

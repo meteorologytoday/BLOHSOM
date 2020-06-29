@@ -62,7 +62,7 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         # x direction
         calFluxDensity_abstract!(;
             X_T                 = X,
-            u_bnd               = fr.u_U,
+            u_bnd               = st.u_U,
             GRAD_bnd            = GRADx_U,
             CURV_T              = CURVx_T,
             FLUX_DEN_bnd        = XFLUX_DEN_x,
@@ -88,7 +88,7 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         # y direction
         calFluxDensity_abstract!(;
             X_T                 = X,
-            u_bnd               = fr.v_V,
+            u_bnd               = st.v_V,
             GRAD_bnd            = GRADy_V,
             CURV_T              = CURVy_T,
             FLUX_DEN_bnd        = XFLUX_DEN_y,
@@ -114,7 +114,7 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         # z direction
         calFluxDensity_abstract!(;
             X_T                 = X,
-            u_bnd               = fr.w_W,
+            u_bnd               = st.w_W,
             GRAD_bnd            = GRADz_W,
             CURV_T              = CURVz_T,
             FLUX_DEN_bnd        = XFLUX_DEN_z,
@@ -146,7 +146,7 @@ function calDiffAdv_QUICKEST_SpeedUp!(
 
         #=
         replace!(XFLUX_DEN_z, NaN=>0)
-        println("Maximum of w_W ", maximum(abs.(fr.w_W)))
+        println("Maximum of w_W ", maximum(abs.(st.w_W)))
         println("Maximum of XFLUX_z: ", maximum(abs.(XFLUX_DEN_z)))
         println("sum of XFLUX x div: ", sum(co.ASUM.T_Δvol_T * XFLUX_CONV_h[:]))
         println("sum of XFLUX y div: ", sum(co.ASUM.T_Δvol_T * tmp1[:]))
@@ -165,10 +165,9 @@ function calDiffAdv_QUICKEST_SpeedUp!(
         @. XFLUX_CONV_h = -1.0 * (XFLUX_CONV_h + tmp1)
         @. XFLUX_CONV = XFLUX_CONV_h - tmp2
 
-        
         calMixedLayer_dΔqdt!(
             Nx          = ev.Nx,
-            Ny          = ev.Ny,
+            yrng        = ev.update_yrng_T,
             Nz          = ev.Nz_av,
             FLUX_CONV_h = XFLUX_CONV_h,
             FLUX_DEN_z  = XFLUX_DEN_z,
@@ -179,7 +178,6 @@ function calDiffAdv_QUICKEST_SpeedUp!(
             hs          = co.Δz_T,
             zs          = ev.z_bnd_av,
         )
-
     end
 
 end
@@ -344,4 +342,45 @@ function calTotalChange!(;
     #println("wQ total: ", tmp_wT/tmp_σ)
     #println("If consider the affect of wQ: ", (tmp - tmp_wT) /tmp_v)
 end
+
+function calMixedLayer_dΔqdt!(;
+    Nx          :: Integer,
+    yrng        :: UnitRange,
+    Nz          :: AbstractArray{Int64, 2},
+    FLUX_CONV_h :: AbstractArray{Float64, 3},     # ( Nz_bone  ,  Nx, Ny )
+    FLUX_DEN_z  :: AbstractArray{Float64, 3},     # ( Nz_bone+1,  Nx, Ny )
+    dΔqdt       :: AbstractArray{Float64, 2},     # ( Nx, Ny )
+    mask        :: AbstractArray{Float64, 2},     # ( Nx, Ny )
+    FLDO        :: AbstractArray{Int64, 2},       # ( Nx, Ny )
+    h_ML        :: AbstractArray{Float64, 2},     # ( Nx, Ny )
+    hs          :: AbstractArray{Float64, 3},     # ( Nz_bone  ,  Nx, Ny )
+    zs          :: AbstractArray{Float64, 3},     # ( Nz_bone+1,  Nx, Ny )
+) 
+
+    for i=1:Nx, j=yrng
+
+        if mask[i, j] == 0.0
+            continue
+        end
+
+        _FLDO = FLDO[i, j]
+
+        if _FLDO == -1
+            continue
+        end
+
+        tmp = 0.0
+        for k = 1:_FLDO-1
+            tmp += FLUX_CONV_h[k, i, j] * hs[k, i, j]
+        end
+        tmp += ( 
+              FLUX_CONV_h[_FLDO, i, j] * zs[_FLDO, i, j] 
+            + ( FLUX_DEN_z[_FLDO+1, i, j] * zs[_FLDO, i, j] - FLUX_DEN_z[_FLDO, i, j] * zs[_FLDO+1, i, j] ) / hs[_FLDO, i, j]
+        )
+
+        dΔqdt[i, j] = tmp / h_ML[i, j]
+    end
+
+end
+
 

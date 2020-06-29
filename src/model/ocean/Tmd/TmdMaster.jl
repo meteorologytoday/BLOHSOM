@@ -1,7 +1,9 @@
 mutable struct TmdMaster
 
+    pplan   :: ParallelPlan
     env     :: TmdEnv
     state   :: TmdState
+    current_substep :: Int64
 
     function TmdMaster(;
         gf,
@@ -32,6 +34,7 @@ mutable struct TmdMaster
 
         master_env = TmdEnv(;
             gi         = gi,
+            update_yrng_T   = nothing,
             Δt         = Δt,
             substeps   = substeps,
             z_bnd      = z_bnd,
@@ -55,22 +58,24 @@ mutable struct TmdMaster
 
         master_state = TmdState(master_env)
 
-        for (i, p) in enumerate(pplan.pids)
-
-            vis_rng_T = pplan.visible_rngs_T[i]
-            vis_rng_V = pplan.visible_rngs_V[i]
+        @sync for (i, p) in enumerate(pplan.pids)
+            
+            visible_yrng_T = pplan.visible_yrngs_T[i]
+            visible_yrng_V = pplan.visible_yrngs_V[i]
+            update_yrng_T  = pplan.update_yrngs_T[i]
 
             slave_gi = PolelikeCoordinate.genGridInfo(
                 gf,
-                sub_yrng=vis_rng_T,
+                sub_yrng=visible_yrng_T,
             )
  
             slave_env = TmdEnv(;
                 gi         = slave_gi,
+                update_yrng_T = update_yrng_T,
                 Δt         = Δt,
                 substeps   = substeps,
                 z_bnd      = z_bnd,
-                topo       = ( topo != nothing) ? topo[:, vis_rng_T] : topo,
+                topo       = ( topo != nothing) ? topo[:, visible_yrng_T] : topo,
                 Kh_X       = Kh_X,
                 Kv_X       = Kv_X,
                 we_max     = we_max,
@@ -79,8 +84,8 @@ mutable struct TmdMaster
                 MLT_rng    = MLT_rng, 
                 NX_passive = NX_passive,
                 t_X_wr     = t_X_wr,
-                X_wr       = ( X_wr != nothing ) ? X_wr[:, :, :, vis_rng_T] : X_wr,
-                mask2      = mask2[:, vis_rng_T],
+                X_wr       = ( X_wr != nothing ) ? X_wr[:, :, :, visible_yrng_T] : X_wr,
+                mask2      = mask2[:, visible_yrng_T],
                 MLT_scheme = MLT_scheme,
                 radiation_scheme = radiation_scheme,
                 convective_adjustment = convective_adjustment,
@@ -91,12 +96,13 @@ mutable struct TmdMaster
             slave_state = createMirror(
                 master_state,
                 master_env.Ny,
-                vis_rng_T,
-                vis_rng_V,
+                visible_yrng_T,
+                visible_yrng_V,
             ) 
 
             @spawnat p let
-                global tmd_model = TmdModel(;
+
+                createSlaveTmdModel(;
                     env   = slave_env,
                     state = slave_state,
                 )
@@ -105,8 +111,21 @@ mutable struct TmdMaster
         end
         
         return new(
-            master_env, master_state,
+            pplan, master_env, master_state, 1,
         )
 
     end
+end
+
+function createSlaveTmdModel(;
+    env :: TmdEnv,
+    state :: TmdState
+)
+                
+    println("### Define tmd_model at pid: ", myid())
+    global tmd_model = TmdModel(;
+        env = env,
+        state = state,
+    )
+
 end

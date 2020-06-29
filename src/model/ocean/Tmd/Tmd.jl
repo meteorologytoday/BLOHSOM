@@ -16,8 +16,6 @@ module Tmd
         return esc(:( 
             co = $(model).core;
             st = $(model).state;
-            dg = $(model).diag;
-            fr = $(model).forcing;
             ev = $(model).env;
         ))
     end
@@ -82,47 +80,64 @@ module Tmd
     include("step_tmd_mixed_layer.jl")
 
     function stepModel!(
-        m :: TmdModel,
+        m :: TmdMaster,
     )
 
-        @fast_extract m
+        @sync let
+            for p in m.pplan.pids
+                @spawnat p let
+                    reset!(tmd_model.core.wksp)
+                end
+            end
 
-        reset!(co.wksp)
-
-        
-        #determineVelocity!(m)
-        if co.current_substep == 1
-            determineVelocity!(m)
+            if m.current_substep == 1
+                @sync for p in m.pplan.pids
+                    @spawnat p let
+                        determineVelocity!(tmd_model)
+                    end
+                end
+            end
+ 
+            for p in m.pplan.pids
+                @spawnat p let
+                    advectTracer_part1!(tmd_model)
+                end
+            end
+               
+                #println("sum of nswflx: ", sum(fr.nswflx))
+                #println("co.current_substep: ", co.current_substep)
         end
 
-        #println("sum of nswflx: ", sum(fr.nswflx))
-        #println("co.current_substep: ", co.current_substep)
-        advectTracer!(m)
-
-        #println("T profile", st.T[:, 63, 82])
-        #println("b profile", st.b[:, 63, 82])
-        doMixedLayerDynamics!(m)
-
-        #if isnan(st.T[1, 60, 59])
-        if (isnan(st.T[1, 63, 82]))
-            throw(ErrorException("STOP"))
-        end
-        
-        if co.current_substep == ev.substeps
-            # do slow processes
-            calBuoyancyPressure!(m)
+        @sync let
+            for p in m.pplan.pids
+                @spawnat p let
+                    advectTracer_part2!(tmd_model)
+                    #doMixedLayerDynamics!(tmd_model)
+                end
+            end
         end
 
-       if co.current_substep != ev.substeps
+
+        if m.current_substep == m.env.substeps
+            @sync let
+                for p in m.pplan.pids
+                    @spawnat p let
+                        # do slow processes
+                        #calBuoyancyPressure!(tmd_model)
+                    end
+                end
+            end
+        end
+
+        if m.current_substep != m.env.substeps
             flag = :INTER_STEP
-            co.current_substep += 1
+            m.current_substep += 1
         else
-            flag = :FINAL_STEP
-            co.current_substep = 1
+           flag = :FINAL_STEP
+           m.current_substep = 1
         end
       
         return flag 
     end
-
 
 end

@@ -1,4 +1,11 @@
 
+using Distributed
+using NCDatasets
+using Formatting
+using ArgParse
+using JSON
+
+@everywhere let
 include("../../share/GridFiles.jl")
 include("../../share/PolelikeCoordinate.jl")
 include("../../share/constants.jl")
@@ -6,12 +13,9 @@ include("../../share/constants.jl")
 include("../../share/RecordTool.jl")
 
 include("Tmd/Tmd.jl")
+end
 
-using Distributed
-using NCDatasets
-using Formatting
-using ArgParse
-using JSON
+
 
 if !isdefined(Main, :REPL)
 
@@ -95,7 +99,7 @@ Dataset(topo_file, "r") do ds
     global mask_idx = (ds["depth"][:] |> nomissing) .< 1000.0
 end
 
-#gi = PolelikeCoordinate.genGridInfo(gf);
+gi = PolelikeCoordinate.genGridInfo(gf);
 
 Δt = 3600.0 * 24 
 
