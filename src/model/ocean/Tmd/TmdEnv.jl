@@ -57,6 +57,10 @@ mutable struct TmdEnv
     convective_adjustment :: Bool
     use_Qflux             :: Bool
     finding_Qflux         :: Bool 
+
+    z_bnd_f             :: Union{AbstractArray{Float64, 1}, Nothing}
+    height_level_counts :: Union{AbstractArray{Int64, 1}, Nothing}
+
  
     function TmdEnv(;
         gi         :: PolelikeCoordinate.GridInfo,
@@ -81,6 +85,8 @@ mutable struct TmdEnv
         use_Qflux     :: Bool,
         finding_Qflux :: Bool,
         verbose    :: Bool = false,
+        z_bnd_f             :: Union{AbstractArray{Float64, 1}, Nothing},
+        height_level_counts :: Union{AbstractArray{Int64, 1}, Nothing},
     )
        
         Nx = gi.Nx
@@ -315,6 +321,9 @@ mutable struct TmdEnv
             convective_adjustment,
             use_Qflux,
             finding_Qflux,
+
+            z_bnd_f,
+            height_level_counts,
         )
     end
 end

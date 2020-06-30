@@ -5,6 +5,7 @@ mutable struct DataUnit
     data        :: AbstractArray  # original data
     odata       :: AbstractArray  # oriented data with shape (x, y, z, X)
     has_Xdim    :: Bool
+    
     function DataUnit(
         id          :: Symbol,
         grid        :: Symbol,   # could be (f, c, s) x (T, U, V, W)

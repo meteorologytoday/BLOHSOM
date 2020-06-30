@@ -3,6 +3,90 @@ function init!(
     snapshot :: Union{String, Nothing} = nothing,
 )
 
+    if typeof(ocn_env) == String
+        ocn_env = loadOcnEnv(ocn_env)
+    end
+
+    model = Model(ocn_env)
+
+
+    return model 
+
+end
+
+
+function stepModel!(
+    model :: Model,
+    write_restart :: Bool,
+)
+
+    env = model.env
+
+    # Currently tmd_core does not need info from
+    # dyn_core so we do not need to pass dyn fields
+    # to mld core
+    @sync @spawnat model.job_dist_info.dyn_slave_pid let
+        for t=1:env.substeps_dyn
+            Dyn.stepModel!(dyn_slave.model)
+        end
+    end
+    
+    # Sending updated velocity to tmd
+    touchDyn!(model, :DYN2TMD, :S2M)
+    touchTmd!(model, :DYN2TMD, :M2S)
+
+    ##### tmd slave should distribute u,v to fine grids here #####
+    @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
+        @spawnat pid projVelocity!(tmd_slave)
+    end
+
+
+    # this involves passing tracer through boundaries
+    # so need to sync every time after it evolves
+    for t=1:env.substeps_tmd
+
+        @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
+            @spawnat pid stepModel!(tmd_slave)
+        end
+
+        touchTmd!(model, :TMDBND, :S2M)
+        touchTmd!(model, :TMDBND, :M2S)
+
+    end
+    
+    ##### tmd slave should calcaulte b of coarse grid #####
+    @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
+        @spawnat pid let
+            BLOHSOM.calCoarseBuoyancyPressure!(tmd_slave)
+        end
+    end
+
+    @sync let
+        @async touchDyn!(model, :END_DYN2MAS, :S2M)
+        @async touchTmd!(model, :END_TMD2MAS, :S2M)
+    end
+
+    touchTmd!(model, :TMD2DYN, :S2M)
+
+    #= 
+    if write_restart
+        writeRestart(
+            dyn_slave,
+            tcr_slave,
+            mld_slave, 
+        )
+    
+    =#
+end
+
+
+#=
+
+function init!(
+    ocn_env = Union{String, OceanEnv};
+    snapshot :: Union{String, Nothing} = nothing,
+)
+
     # TODO
     ocn_env = (typeof(ocn_env) == String) ? loadOcnEnv(env) : ocn_env
     
@@ -77,76 +161,6 @@ function init!(
 
 end
 
-
-function stepModel!(
-    model :: Model,
-    write_restart :: Bool,
-)
-
-    env = model.env
-
-    # Send infos
-    @sync let
-        @async touchDyn!(model, :TMD2DYN,         :M2S) # :B_c
-        @async touchTmd!(model, :FORCING_MAS2TMD, :M2S) # forcing such as  :SWFLX
-    end 
-     
-    # Currently tmd_core does not need info from
-    # dyn_core so we do not need to pass dyn fields
-    # to mld core
-    @sync @spawnat model.job_dist_info.dyn_slave_pid let
-        for t=1:env.substeps_dyn
-            Dyn.stepModel!(dyn_slave.model)
-        end
-    end
-    
-    # Sending updated velocity to tmd
-    touchDyn!(model, :DYN2TMD, :S2M)
-    touchTmd!(model, :DYN2TMD, :M2S)
-
-    ##### tmd slave should distribute u,v to fine grids here #####
-    @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
-        @spawnat pid projVelocity!(tmd_slave)
-    end
-
-
-    # this involves passing tracer through boundaries
-    # so need to sync every time after it evolves
-    for t=1:env.substeps_tmd
-
-        @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
-            @spawnat pid stepModel!(tmd_slave)
-        end
-
-        touchTmd!(model, :TMDBND, :S2M)
-        touchTmd!(model, :TMDBND, :M2S)
-
-    end
-    
-    ##### tmd slave should calcaulte b of coarse grid #####
-    @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
-        @spawnat pid let
-            BLOHSOM.calCoarseBuoyancyPressure!(tmd_slave)
-        end
-    end
-
-    @sync let
-        @async touchDyn!(model, :END_DYN2MAS, :S2M)
-        @async touchTmd!(model, :END_TMD2MAS, :S2M)
-    end
-
-    touchTmd!(model, :TMD2DYN, :S2M)
-
-    #= 
-    if write_restart
-        writeRestart(
-            dyn_slave,
-            tcr_slave,
-            mld_slave, 
-        )
-    
-    =#
-end
 
 function regBindingGroups!(model::Model)
     groups = Dict(
@@ -269,3 +283,4 @@ end
 
 function loadData!()
 end
+=#

@@ -3,6 +3,7 @@ include("../../../share/PolelikeCoordinate.jl")
 
 module Dyn
 
+    using SharedArrays
     using Formatting
     using LinearAlgebra    
     using ..PolelikeCoordinate
@@ -59,7 +60,7 @@ module Dyn
     include("../MatrixOperators.jl")
     include("../VerticalAverager.jl")
     include("../Workspace.jl")
-    include("../allocat.jl")
+    include("../allocate.jl")
 
     include("AdvectionSpeedUpMatrix_dyn.jl")
     #include("PhiSolver.jl")
@@ -67,8 +68,6 @@ module Dyn
     #include("PhiSolver.jl.old")
     include("PhiSolver_T_bc0.jl")
     include("DiffusionSolver.jl")
-
-
 
     include("DynEnv.jl")
     include("DynState.jl")

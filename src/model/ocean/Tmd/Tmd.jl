@@ -42,12 +42,16 @@ module Tmd
     include("../../../share/constants.jl")
     include("../../../share/ocean_state_function.jl")
 
-    include("ParallelPlan.jl")
+    include("../VerticalAverager.jl")
     include("../MatrixOperators.jl")
     include("../Workspace.jl")
     include("../allocate.jl")
+    include("ParallelPlan.jl")
     include("AdvectionSpeedUpMatrix.jl")
     include("AccumulativeVariables.jl")
+
+
+    include("BridgeState.jl")
     include("TmdEnv.jl")
     include("TmdState.jl")
     include("TmdCore.jl")
@@ -55,6 +59,7 @@ module Tmd
     include("TmdMaster.jl")
 
     # functions
+    include("bridge_state_setup.jl")
     include("latent_heat_release_of_freezing.jl")
     include("columnwise_budget.jl")
     include("trivial_functions.jl")
@@ -74,6 +79,7 @@ module Tmd
  
     include("varlist.jl")
 
+
     include("leonard1979.jl")
     include("step_model.jl")
     #include("step_model.jl.old")
@@ -91,7 +97,7 @@ module Tmd
             end
 
             if m.current_substep == 1
-                @sync for p in m.pplan.pids
+                for p in m.pplan.pids
                     @spawnat p let
                         determineVelocity!(tmd_model)
                     end
@@ -124,6 +130,7 @@ module Tmd
                     @spawnat p let
                         # do slow processes
                         calBuoyancyPressure!(tmd_model)
+                        calCoarseBuoyancyPressure!(tmd_model)
                     end
                 end
             end

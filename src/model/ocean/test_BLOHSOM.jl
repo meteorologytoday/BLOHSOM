@@ -45,7 +45,7 @@ substeps_tmd = 1
 rec_frequency = 1
 
 
-run_days = 120
+run_days = 2
 coupling = 12
 substeps_dyn = 2
 substeps_tmd = 1

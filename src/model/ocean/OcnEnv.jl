@@ -70,6 +70,7 @@ mutable struct OcnEnv
     X_wr_file             :: AbstractArray{String, 1}
     X_wr_varname          :: AbstractArray{String, 1}
     t_X_wr                :: AbstractArray{Float64, 1}
+    X_wr                  :: Union{Nothing, AbstractArray{Float64}}
 
     flow_scheme           :: Symbol
     MLT_scheme            :: Symbol
@@ -217,6 +218,8 @@ end
         end
 
 
+        X_wr = nothing
+
         return new(
             hrgrid,
             topo_file,
@@ -252,6 +255,7 @@ end
             X_wr_file,
             X_wr_varname,
             t_X_wr,
+            X_wr,
 
             flow_scheme,
             MLT_scheme,

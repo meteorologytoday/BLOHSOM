@@ -27,6 +27,8 @@ mutable struct TmdMaster
         convective_adjustment = true,
         use_Qflux      = true,
         finding_Qflux  = false,
+        z_bnd_f = nothing,
+        height_level_counts = nothing,
     )
 
         # create master state
@@ -54,6 +56,8 @@ mutable struct TmdMaster
             convective_adjustment = convective_adjustment,
             use_Qflux  = use_Qflux,
             finding_Qflux = finding_Qflux,
+            z_bnd_f = z_bnd_f,
+            height_level_counts = height_level_counts,
         )
 
         master_state = TmdState(master_env)
@@ -91,6 +95,8 @@ mutable struct TmdMaster
                 convective_adjustment = convective_adjustment,
                 use_Qflux  = use_Qflux,
                 finding_Qflux = finding_Qflux,
+                z_bnd_f = z_bnd_f,
+                height_level_counts = height_level_counts,
             )
    
             slave_state = createMirror(
@@ -100,12 +106,13 @@ mutable struct TmdMaster
                 visible_yrng_V,
             ) 
 
-            @spawnat p let
 
+            @spawnat p let
                 createSlaveTmdModel(;
                     env   = slave_env,
                     state = slave_state,
                 )
+
             end 
  
         end
@@ -119,7 +126,7 @@ end
 
 function createSlaveTmdModel(;
     env :: TmdEnv,
-    state :: TmdState
+    state :: TmdState,
 )
                 
     println("### Define tmd_model at pid: ", myid())
@@ -129,3 +136,20 @@ function createSlaveTmdModel(;
     )
 
 end
+
+
+function setupBridgeState!(
+    B_to_dyn :: AbstractArray{Float64, 3},
+    uc_from_dyn :: AbstractArray{Float64, 3},
+    vc_from_dyn :: AbstractArray{Float64, 3},
+)
+    global tmd_model
+    update_yrng_T = tmd_model.env.update_yrng_T
+
+    # received variables are in :xyz
+    tmd_model.bridge_state.uc_from_dyn = view(uc_from_dyn, :, update_yrng_T, :)
+    tmd_model.bridge_state.vc_from_dyn = view(vc_from_dyn, :, update_yrng_T, :)
+    tmd_model.bridge_state.B_to_dyn = view(B_to_dyn, :, update_yrng_T, :)
+
+end
+

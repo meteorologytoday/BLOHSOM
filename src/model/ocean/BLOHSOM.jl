@@ -23,9 +23,9 @@ using Distributed
     include("Log.jl")
     include("OcnEnv.jl")
     include("DataUnit.jl")
-    include("SharedData.jl")
-    include("JobDistributionInfo.jl")
-    include("DataExchanger.jl")
+    include("DataTable.jl")
+    #include("JobDistributionInfo.jl")
+    #include("DataExchanger.jl")
     include("VerticalAverager.jl")
     
 
@@ -34,10 +34,10 @@ using Distributed
     include("core_func.jl")
 
     # Slave
-    include("DynSlave.jl")
-    include("DynSlave_func.jl")
-    include("TmdSlave.jl")
-    include("TmdSlave_func.jl")
+    #include("DynSlave.jl")
+    #include("DynSlave_func.jl")
+    #include("TmdSlave.jl")
+    #include("TmdSlave_func.jl")
 
     include("varlist.jl")
 end

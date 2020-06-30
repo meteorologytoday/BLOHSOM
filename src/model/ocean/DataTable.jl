@@ -1,9 +1,9 @@
-mutable struct SharedData
+mutable struct DataTable
 
     env        :: OcnEnv
     data_units :: Dict{ Symbol, DataUnit }
     flags      :: Dict{ Symbol, Int64} 
-    function SharedData(
+    function DataTable(
         env::OcnEnv
     )
 
@@ -21,7 +21,7 @@ mutable struct SharedData
 end
 
 function regVariable!(
-    sd       :: SharedData,
+    dt       :: DataTable,
     env      :: OcnEnv,
     id       :: Symbol,
     grid     :: Symbol,
@@ -31,13 +31,11 @@ function regVariable!(
     has_Xdim :: Bool = false,
 ) where T
 
-
-    env = sd.env
+    env = dt.env
     Nx, Ny, Nz_f, Nz_c = env.Nx, env.Ny, env.Nz_f, env.Nz_c
     NX = env.NX
 
-
-    if haskey(sd.data_units, id)
+    if haskey(dt.data_units, id)
         throw(ErrorException("Error: variable id " * String(id) *  " already exists."))
     end
 
@@ -92,7 +90,7 @@ function regVariable!(
         end
     end
 
-    sd.data_units[id] = DataUnit(
+    dt.data_units[id] = DataUnit(
         id,
         grid,
         shape,
@@ -100,5 +98,5 @@ function regVariable!(
         has_Xdim,
     )
 
-    sd.flags[id] = 0
+    dt.flags[id] = 0
 end
