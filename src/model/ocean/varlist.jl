@@ -5,26 +5,27 @@ function getCoordinateVariable(m::Model)
 end
 
 function getCompleteVariableList(m::Model)
-        d = m.shared_data.data_units
-        return Dict(
-            "T"               => ( view(d[:X].odata, :, :, :, 1),             ("Nx", "Ny", "Nz_f") ),
-#            "S"               => ( view(d[:X].odata, :, :, :, 2),             ("Nx", "Ny", "Nz_f") ),
-            "swflx"           => ( d[:SWFLX].odata,                           ("Nx", "Ny") ),
-            "nswflx"          => ( d[:NSWFLX].odata,                          ("Nx", "Ny") ),
-            "X_ML"            => ( view(d[:X_ML].odata, :, :, :, 1),          ("Nx", "Ny", "NX") ),
-            "h_ML"            => ( d[:h_ML].odata,                            ("Nx", "Ny") ),
-            "Phi"             => ( d[:Φ].odata,                               ("Nx", "Ny",) ),
-            "u_c"         => ( d[:u_c].odata,                       ("Nx", "Ny",   "Nz_c") ),
-            "v_c"         => ( d[:v_c].odata,                       ("Nx", "Nyp1", "Nz_c") ),
-            "b_ML"            => ( d[:b_ML].odata,                            ("Nx", "Ny") ),
-            "b"               => ( d[:b].odata,                               ("Nx", "Ny", "Nz_f") ),
+    tmd = m.tmd_engine.state
+    dyn = m.dyn_engine.state
+
+    return Dict(
+        "T"               => ( PermutedDimsArray(view(tmd.X, :, :, :, 1), (2, 3, 1)), ("Nx", "Ny", "Nz_f") ),
+        "S"               => ( PermutedDimsArray(view(tmd.X, :, :, :, 2), (2, 3, 1)), ("Nx", "Ny", "Nz_f") ),
+        "T_ML"            => ( view(tmd.X_ML, :, :, 1),          ("Nx", "Ny",) ),
+        "S_ML"            => ( view(tmd.X_ML, :, :, 2),          ("Nx", "Ny",) ),
+        "h_ML"            => ( tmd.h_ML,                            ("Nx", "Ny",) ),
+        "swflx"           => ( tmd.swflx,                           ("Nx", "Ny",) ),
+        "nswflx"          => ( tmd.nswflx,                          ("Nx", "Ny",) ),
+        "Phi"             => ( dyn.Φ,                               ("Nx", "Ny",) ),
+        "u_total"         => ( dyn.u_total,                         ("Nx", "Ny",   "Nz_c") ),
+        "v_total"         => ( dyn.v_total,                         ("Nx", "Nyp1", "Nz_c") ),
 #            "B"               => ( d[:B].odata,                               ("Nx", "Ny", "Nz_f") ),
 #            "dBdx"            => ( d[:∂B∂x].odata,                            ("Nx", "Ny", "Nz_c") ),
 #            "dBdy"            => ( d[:∂B∂y].odata,                            ("Nx", "Nyp1", "Nz_c") ),
-            #"u_U"             => ( d[:u_U].odata,                             ("Nx", "Ny",   "Nz_f") ),
-            #"v_V"             => ( d[:v_V].odata,                             ("Nx", "Nyp1", "Nz_f") ),
-             "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
-        )
+        #"u_U"             => ( d[:u_U].odata,                             ("Nx", "Ny",   "Nz_f") ),
+        #"v_V"             => ( d[:v_V].odata,                             ("Nx", "Nyp1", "Nz_f") ),
+#         "w_W"            => ( d[:w_W].odata,                             ("Nx", "Ny", "Nz_fp1") ),
+    )
 end
 
 

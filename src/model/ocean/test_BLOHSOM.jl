@@ -154,7 +154,6 @@ ocn_env = BLOHSOM.OcnEnv(
 println("##### Initialize model #####")
 model = BLOHSOM.init!(ocn_env)
 
-du = model.shared_data.data_units
 #du[:Φ].data .= 0.01 * exp.(- ( (gi.c_lat * gi.R ).^2 + (gi.R * (gi.c_lon .- π)).^2) / (σ^2.0) / 2)
 
 σz = 150.0
@@ -201,27 +200,10 @@ h_ML = gf.mask * 0 .+ 10.0
 #total_T .= 10.0
 total_T[mask3 .== 0.0] .= 0
 
-@sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)
-    @spawnat pid let
-        m = BLOHSOM.tmd_slave.model
-
-        m.forcing.h_ML .= h_ML
-        
-        m.state.X_ML[:, :, 1] .= total_T[1, :, :]
-        m.state.X[:, :, :, 1] .= total_T
-
-        BLOHSOM.Tmd.initialization!(BLOHSOM.tmd_slave.model)
-
-    end
-end
-
-@sync @spawnat model.job_dist_info.dyn_slave_pid let
-
-    #BLOHSOM.dyn_slave.model.state.Φ .= 0.01 * exp.(- ( (gi.c_y ).^2 + (gi.R * (gi.c_lon .- π)).^2) / (σ^2.0) / 2)
-
-end
-BLOHSOM.touchTmd!(model, :END_TMD2MAS, :S2M)
-BLOHSOM.touchDyn!(model, :END_DYN2MAS, :S2M)
+tmd_state = model.tmd_engine.state
+tmd_state.h_ML .= h_ML
+tmd_state.X_ML[:, :, 1] .= total_T[1, :, :]
+tmd_state.X[:, :, :, 1] .= total_T
 
 recorder = BLOHSOM.getBasicRecorder(model)
 RecordTool.setNewNCFile!(recorder, output_file)

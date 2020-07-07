@@ -22,18 +22,7 @@ function stepModel!(
 
     env = model.env
 
-    # Currently tmd_core does not need info from
-    # dyn_core so we do not need to pass dyn fields
-    # to mld core
-    @sync @spawnat model.job_dist_info.dyn_slave_pid let
-        for t=1:env.substeps_dyn
-            Dyn.stepModel!(dyn_slave.model)
-        end
-    end
-    
-    # Sending updated velocity to tmd
-    touchDyn!(model, :DYN2TMD, :S2M)
-    touchTmd!(model, :DYN2TMD, :M2S)
+    Dyn.stepModel!(model.dyn_engine)
 
     ##### tmd slave should distribute u,v to fine grids here #####
     @sync for (p, pid) in enumerate(model.job_dist_info.tmd_slave_pids)

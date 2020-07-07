@@ -57,13 +57,13 @@ mutable struct Model
         )         
 
         @sync for p in tmd_pplan.pids
-                @spawnat p let 
-                    Tmd.setupBridgeState!(
-                        dyn_engine.state.B, 
-                        dyn_engine.state.u_total,
-                        dyn_engine.state.v_total,
-                    )
-                end
+            @spawnat p let 
+                Tmd.setupBridgeState!(
+                    dyn_engine.state.B, 
+                    dyn_engine.state.u_total,
+                    dyn_engine.state.v_total,
+                )
+            end
         end
 
         #=

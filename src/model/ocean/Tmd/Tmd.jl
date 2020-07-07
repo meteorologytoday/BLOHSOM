@@ -99,6 +99,7 @@ module Tmd
             if m.current_substep == 1
                 for p in m.pplan.pids
                     @spawnat p let
+                        projectVelocity!(tmd_model) 
                         determineVelocity!(tmd_model)
                     end
                 end
